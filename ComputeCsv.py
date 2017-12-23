@@ -59,6 +59,8 @@ animacion2=[]
 animacion3=[]
 abr_accion=[]
 tematica=[]
+ventapromo=[]
+eurospromo=[]
 
 for i in range(0,len(data.index)):
     #print(i)
@@ -98,6 +100,8 @@ for i in range(0,len(data.index)):
         animacion3.append(promo.iloc[row_aux]["Animacion 3"])
         abr_accion.append(promo.iloc[row_aux]["Abreviatura accion"])
         tematica.append(promo.iloc[row_aux]["TEMATICA"])
+        ventapromo.append(data.iloc[i]["KL_DETREND"])
+        eurospromo.append(data.iloc[i]["EUROS_DETREND"])
 
     else:
         animacion1.append(0)
@@ -105,6 +109,8 @@ for i in range(0,len(data.index)):
         animacion3.append(0)
         abr_accion.append(0)
         tematica.append(0)
+        ventapromo.append(0)
+        eurospromo.append(0)
 
 
 #print(len(animacion1))
@@ -113,10 +119,12 @@ data["ANIMACION2"]=animacion2
 data["ANIMACION3"]=animacion3
 data["ABREVIATURA_ACCION"]=abr_accion
 data["TEMÁTICA"]=tematica
+data["VENTA_PROMO"]=ventapromo
+data["EUROS_PROMO"]=eurospromo
 
 #print(data)
 
-#data.to_csv("data.csv", sep=",")
+data.to_csv("data.csv", sep=",")
 
 
 
