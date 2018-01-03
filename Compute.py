@@ -60,18 +60,18 @@ interp = False
 
 # To test. In production, this is derived from the "Material"+"Enseña"+"Punto de Venta"+"Familia APO" that is processed
 for ent in entries:
-    if ent[3]=="340" and ent[1] == "Z5E99K":
+    if ent[3]=="471" and ent[1] == "Z5E99K":
         SFAPO = int(ent[3])
 
         #### This query has to be adapted for each "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
         ## This part of the query stays fixed
-        query = 'SELECT "_BIC_ZMATERIAL","_BIC_ZENSENA2","_BIC_ZDESMER70","_BIC_ZFAMAPO","ZFECHA",sum("_BIC_ZCANTOT") AS "_BIC_ZCANTOT",sum("_BIC_ZKL") AS "_BIC_ZKL",sum("_BIC_ZIMPTOT2") AS "_BIC_ZIMPTOT2","_BIC_ZSECTOR","_BIC_ZCONSERVA","_BIC_ZTIPMAT","_BIC_ZSECCION","_BIC_ZSUBSEC","_BIC_ZFAMILIA","_BIC_ZSUBFAMIL","_BIC_ZVARIEDAD","_BIC_ZFORMATO","MATL_GROUP","BASE_UOM","_BIC_ZMARCA","_BIC_ZTIPOIVA","_BIC_ZENVASE","EANUPC","NET_WGT_DL","GROSS_WT","UNIT_OF_WT","_BIC_ZPMATN","_BIC_ZEIVR","TXTLG","_BIC_ZENSENA","_BIC_ZDESMER69","_BIC_ZEMISOR","ZDESMER69_TXTMD","ZEMISOR_TXTMD","ZEMISOR__BIC_ZEMISOR","ZENSENA__BIC_ZENSENA","TXTSH","ZYEAR","ZMONTH" FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPTF1" WHERE '
+        query = 'SELECT "_BIC_ZMATERIAL","_BIC_ZENSENA2","_BIC_ZDESMER70","_BIC_ZFAMAPO","ZFECHA",sum("_BIC_ZCANTOT") AS "_BIC_ZCANTOT",sum("_BIC_ZKL") AS "_BIC_ZKL",sum("_BIC_ZIMPTOT2") AS "_BIC_ZIMPTOT2" FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPTF1" WHERE '
         query = query + '"ZFECHA" >= 20170101 AND "_BIC_ZENSENA2" NOT IN (\'Z5E005\',\'Z5E008\',\'Z5E013\',\'Z5E018\') AND '
         ## Here goes the adaptation: replace the hard coded values with the variable of the "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
         ## These values are hard coded to test
         query = query + '"_BIC_ZENSENA2" = \''+ent[1]+'\' AND "_BIC_ZFAMAPO"=\''+ent[3]+'\' AND "_BIC_ZMATERIAL"=\''+ent[0]+'\' AND "_BIC_ZDESMER70"=\''+ent[2]+'\' '
         ## This part of the query stays fixed
-        query = query + 'GROUP BY "_BIC_ZMATERIAL","_BIC_ZSECTOR","_BIC_ZCONSERVA","_BIC_ZTIPMAT","_BIC_ZSECCION","_BIC_ZSUBSEC","_BIC_ZFAMILIA","_BIC_ZSUBFAMIL","_BIC_ZVARIEDAD","_BIC_ZFORMATO","MATL_GROUP","BASE_UOM","_BIC_ZMARCA","_BIC_ZTIPOIVA","_BIC_ZENVASE","EANUPC","_BIC_ZFAMAPO","NET_WGT_DL","GROSS_WT","UNIT_OF_WT","_BIC_ZPMATN","_BIC_ZEIVR","TXTLG","_BIC_ZENSENA","_BIC_ZDESMER69","_BIC_ZEMISOR","_BIC_ZENSENA2","_BIC_ZDESMER70","ZDESMER69_TXTMD","ZEMISOR_TXTMD","ZEMISOR__BIC_ZEMISOR","ZENSENA__BIC_ZENSENA","TXTSH","ZFECHA","ZYEAR","ZMONTH" '
+        query = query + 'GROUP BY "_BIC_ZMATERIAL","_BIC_ZFAMAPO","_BIC_ZENSENA2","_BIC_ZDESMER70","ZFECHA" '
         query = query + 'ORDER BY "ZFECHA"'
 
         print("SQL Query: "+query)
@@ -144,7 +144,7 @@ for ent in entries:
         #print(total)
 
         # We read the seasonality file
-        station_file = "C:\\Users\\Marc\\Google Drive\\CAPSA\\New Data\\Tabla_estacionalidad fichero carga.xlsx"
+        station_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\New Data\\Tabla_estacionalidad fichero carga.xlsx"
         station = pd.read_excel(station_file,1)
         #print(station)
 
@@ -166,7 +166,7 @@ for ent in entries:
         total["EUROS_DETREND"] = total.loc[:, "IMP"] * total.loc[:, "TREND"]
         # Now we have a dataframe with detrended columns
         print(total)
-        #total.to_csv("Dayana.csv", sep=",")
+        total.to_csv("Dayana2.csv", sep=",")
         KL = np.array(total.loc[:,"KL_DETREND"])
         KL = savitzky_golay(KL, 61, 1)  # window size 51, polynomial order 3
         plt.plot(KL)
