@@ -29,7 +29,8 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
 
 def Promo():
     #we read each file in the path and make calculations
-    path=r'C:/Users/tr5568/Desktop/DAYANA/CAPSA/csv'
+    #path=r'C:/Users/tr5568/Desktop/DAYANA/CAPSA/csv'
+    path = r'C:/Users/gnuma/Desktop/CAPSA/csv'
     allFiles=glob.glob(path+"/*.csv")
     #print(allFiles)
     contador=0
