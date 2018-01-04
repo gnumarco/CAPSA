@@ -59,8 +59,9 @@ interp = False
 ############### This part of the code has to be executed for each "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination !!!!!!!!
 
 # To test. In production, this is derived from the "Material"+"Enseña"+"Punto de Venta"+"Familia APO" that is processed
+cpt = 0
 for ent in entries:
-    if ent[3]=="471" and ent[1] == "Z5E99K":
+    if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
         SFAPO = int(ent[3])
 
         #### This query has to be adapted for each "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
@@ -136,40 +137,45 @@ for ent in entries:
             rows_list.append(dict1)
 
         # We build the complete dataframe with all the rows: now we have exactly one row per day, without any missing value
-        total = pd.DataFrame(rows_list)
-        #print(total)
+        if(len(rows_list)>0):
+            total = pd.DataFrame(rows_list)
+            #print(total)
 
-        # We add a column with the week number
-        total["WEEK"] = total.apply(func, axis=1)
-        #print(total)
+            # We add a column with the week number
+            total["WEEK"] = total.apply(func, axis=1)
+            #print(total)
 
-        # We read the seasonality file
-        station_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\New Data\\Tabla_estacionalidad fichero carga.xlsx"
-        station = pd.read_excel(station_file,1)
-        #print(station)
+            # We read the seasonality file
+            station_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\New Data\\Tabla_estacionalidad fichero carga.xlsx"
+            station = pd.read_excel(station_file,1)
+            #print(station)
 
-        # See if we have to detrend: we look if the SFAPO that we are computing is present in the seasonality file
-        if SFAPO in station.loc[:,"cod sfapo"]:
-            print("Detrending")
-            print(station[station["cod sfapo"]==SFAPO])
-            total = pd.merge(total, station, left_on=["FAMAPO", "WEEK"], right_on=["cod sfapo", "semana"])
-            total["TREND"] = total.apply(calc_trend, axis = 1)
-            total = total.drop("cod sfapo",1)
-            total = total.drop("semana", 1)
-            total = total.drop("volumen", 1)
-        else:
-            print("NOT Detrending")
-            total["TREND"] = 1.0
+            # See if we have to detrend: we look if the SFAPO that we are computing is present in the seasonality file
+            if SFAPO in station.loc[:,"cod sfapo"]:
+                print("Detrending")
+                print(station[station["cod sfapo"]==SFAPO])
+                total = pd.merge(total, station, left_on=["FAMAPO", "WEEK"], right_on=["cod sfapo", "semana"])
+                total["TREND"] = total.apply(calc_trend, axis = 1)
+                total = total.drop("cod sfapo",1)
+                total = total.drop("semana", 1)
+                total = total.drop("volumen", 1)
+            else:
+                print("NOT Detrending")
+                total["TREND"] = 1.0
 
-        # Now we have a dataframe with a trend column
-        total["KL_DETREND"] = total.loc[:, "KL"] * total.loc[:, "TREND"]
-        total["EUROS_DETREND"] = total.loc[:, "IMP"] * total.loc[:, "TREND"]
-        # Now we have a dataframe with detrended columns
-        print(total)
-        total.to_csv("Dayana2.csv", sep=",")
-        KL = np.array(total.loc[:,"KL_DETREND"])
-        KL = savitzky_golay(KL, 61, 1)  # window size 51, polynomial order 3
-        plt.plot(KL)
-        plt.plot(total.loc[:,"KL_DETREND"])
-        plt.ylabel('some numbers')
-        plt.show()
+            # Now we have a dataframe with a trend column
+            total["KL_DETREND"] = total.loc[:, "KL"] * total.loc[:, "TREND"]
+            total["EUROS_DETREND"] = total.loc[:, "IMP"] * total.loc[:, "TREND"]
+            # Now we have a dataframe with detrended columns
+            print(total)
+            if cpt ==0:
+                total.to_csv("Dayana.csv", sep=",", index = False)
+            else:
+                total.to_csv("Dayana.csv", mode='a', header=False, sep=",", index=False)
+            #KL = np.array(total.loc[:,"KL_DETREND"])
+            #KL = savitzky_golay(KL, 61, 1)  # window size 51, polynomial order 3
+            #plt.plot(KL)
+            #plt.plot(total.loc[:,"KL_DETREND"])
+            #plt.ylabel('some numbers')
+            #plt.show()
+        cpt += 1
