@@ -17,7 +17,8 @@ def Canibalizacion():
     # -mean of BASELINE of all the products with the same Grupo canibaliacion (without the one we are considering)
     df_baseline=data_canib['BASELINE'].agg(['sum','size']).reset_index()
     df_KLdetrend=data_canib['KL_DETREND'].agg(['sum','size']).reset_index()
-    #print(df_baseline)
+    #df_baseline.to_csv("df_baseline.csv", sep=',')
+    #df_KLdetrend.to_csv("df_KLdetrend.csv", sep=',')
 
     canib=[]
 
@@ -25,10 +26,14 @@ def Canibalizacion():
     for i in range(0,len(data.index)):
         row_data = data.loc[i, :]
         #print(row_data)
-        aux_base=df_baseline[(df_baseline['Grupo canibalizacion']==row_data[16]) & (df_baseline['DATE']==row_data[3])]
-        aux_KLdetrend=df_KLdetrend[(df_KLdetrend['Grupo canibalizacion']==row_data[16]) & (df_KLdetrend['DATE']==row_data[3])]
-        #print((aux_base['sum']-row_data[14])/(aux_base['size']-1)-((aux_KLdetrend['sum']-row_data[12])/(aux_KLdetrend['size']-1)))
-        canib.append(float(-((aux_base['sum']-row_data[14])/(aux_base['size']-1))+((aux_KLdetrend['sum']-row_data[12])/(aux_KLdetrend['size']-1))))
+        if row_data[11]==0 or row_data[15]==-1: canib.append(0)
+        else:
+            aux_base=df_baseline[(df_baseline['Grupo canibalizacion']==row_data[15]) & (df_baseline['DATE']==row_data[2])]
+            aux_KLdetrend=df_KLdetrend[(df_KLdetrend['Grupo canibalizacion']==row_data[15]) & (df_KLdetrend['DATE']==row_data[2])]
+            #print((aux_base['sum']-row_data[13])/(aux_base['size']-1)-((aux_KLdetrend['sum']-row_data[11])/(aux_KLdetrend['size']-1)))
+            if(aux_KLdetrend['size'].iloc[0]<=1): canib.append(0)
+            else:
+                canib.append(float(((aux_KLdetrend['sum']-row_data[11])/(aux_KLdetrend['size']-1))-((aux_base['sum']-row_data[13])/(aux_base['size']-1))))
 
     #add the new calculated column to our data
     data["CANIBALIZACION"]=canib

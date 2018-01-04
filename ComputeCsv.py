@@ -37,7 +37,7 @@ def Promo():
     #print(data)
 
     for file_ in allFiles:
-        data=pd.read_csv(file_,index_col=None, header=0,sep=",", parse_dates=[2])
+        data=pd.read_csv(file_, header=0,sep=",", parse_dates=[2])
         #BASELINE
         KL = np.array(data.loc[:,"KL_DETREND"])
         KL = savitzky_golay(KL, 61, 1)  # window size 51, polynomial order 3
