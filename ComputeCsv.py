@@ -37,9 +37,13 @@ def Promo():
     #print(data)
 
     for file_ in allFiles:
-        data=pd.read_csv(file_, header=0,sep=",", parse_dates=[2])
+        data=pd.read_csv(file_,sep=",")
+        print(data.dtypes)
         #BASELINE
-        KL = np.array(data.loc[:,"KL_DETREND"])
+
+        KL = np.array(data.loc[:,"KL"])
+        print(KL)
+        #print(data.describe())
         KL = savitzky_golay(KL, 61, 1)  # window size 51, polynomial order 3
         #plt.plot(KL)
         #plt.plot(data.loc[:, "KL_DETREND"])
@@ -93,14 +97,14 @@ def Promo():
                 #print(row_promo)
                 #print(str(row_promo[7]))
                 if (not np.math.isnan(row_promo[7])):
-                    if(row_data[3]==row_promo[2] and row_data[4]==int(row_promo[7])):
+                    if(row_data[2]==row_promo[2] and row_data[3]==int(row_promo[7])):
                         #print("DAYI")
                         #print("ENSEÑA Y FAMILIA APO")
                         #print(row_data[3])
                         #print(row_promo[2])
                         #print(row_data[4])
                         #print(row_promo[7])
-                        if(row_data[2]<=row_promo[4] and row_data[2]>=row_promo[3]):
+                        if(row_data[1]<=row_promo[4] and row_data[1]>=row_promo[3]):
                             #print("FECHAS")
                             #print(row_data[2])
                             #print(row_promo[4])
