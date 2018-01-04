@@ -28,7 +28,7 @@ def Canibalizacion():
         aux_base=df_baseline[(df_baseline['Grupo canibalizacion']==row_data[16]) & (df_baseline['DATE']==row_data[3])]
         aux_KLdetrend=df_KLdetrend[(df_KLdetrend['Grupo canibalizacion']==row_data[16]) & (df_KLdetrend['DATE']==row_data[3])]
         #print((aux_base['sum']-row_data[14])/(aux_base['size']-1)-((aux_KLdetrend['sum']-row_data[12])/(aux_KLdetrend['size']-1)))
-        canib.append(float((aux_base['sum']-row_data[14])/(aux_base['size']-1)-((aux_KLdetrend['sum']-row_data[12])/(aux_KLdetrend['size']-1))))
+        canib.append(float(-((aux_base['sum']-row_data[14])/(aux_base['size']-1))+((aux_KLdetrend['sum']-row_data[12])/(aux_KLdetrend['size']-1))))
 
     #add the new calculated column to our data
     data["CANIBALIZACION"]=canib
