@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from math import factorial
 import glob
+import statistics as stats
 
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
@@ -30,7 +31,7 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
 def Promo():
     #we read each file in the path and make calculations
     #path=r'C:/Users/tr5568/Desktop/DAYANA/CAPSA/csv'
-    path = r'C:/Users/gnuma/Desktop/CAPSA/csv'
+    path = r'C:/Users/tr5568/Desktop/DAYANA/CAPSA/csv'
     allFiles=glob.glob(path+"/*.csv")
     #print(allFiles)
     contador=0
@@ -43,13 +44,69 @@ def Promo():
         #BASELINE
 
         KL = np.array(data.loc[:,"KL_DETREND"])
-        #print(KL)
+        print('KL original')
+        print(KL)
         #print(data.describe())
+
+        vector_average=[]
+        vector_var=[]
+        #BASELINE using windows
+        if len(KL)>=7:
+            for i, x in enumerate(KL):
+                if i>=3 and i<len(KL)-3:
+                    average=0
+                    vector=[]
+                    vector.append(KL[i])
+                    for j in range(1,4):
+                        vector.append(KL[i-1])
+                        vector.append(KL[i+1])
+                    for j,y in enumerate(vector):
+                        average+=y
+                    average=average/len(vector)
+                    var = stats.stdev(vector, average)
+                    vector_average.append(average)
+                    vector_var.append(var)
+                    if abs(KL[i])>average+var or abs(KL[i])<average-var:
+                        KL[i]=average
+                else:
+                    if i in [0,1,2]:
+                        vector=[]
+                        average=0
+                        for b in range(0,7):
+                            vector.append(KL[i])
+                        for b,x in enumerate(vector):
+                            average+=x
+                        average=average/len(vector)
+                        var = stats.stdev(vector, average)
+                        vector_average.append(average)
+                        vector_var.append(var)
+                        if abs(KL[i]) > average + var or abs(KL[i]) < average - var:
+                            KL[i] = average
+
+                    if i in [len(KL) - 1, len(KL) - 2, len(KL) - 3]:
+                        vector=[]
+                        average=0
+                        for b in range(1,8):
+                            vector.append(KL[len(KL)-b])
+                        for j,y in enumerate(vector):
+                            average+=y
+                        average=average/len(vector)
+                        var = stats.stdev(vector, average)
+                        vector_average.append(average)
+                        vector_var.append(var)
+                        if abs(KL[i]) > average + var or abs(KL[i]) < average - var:
+                            KL[i] = average
+
+
+        print('KL después de ventanas')
+        print(KL)
         KL = savitzky_golay(KL, 61, 1)  # window size 51, polynomial order 3
         #plt.plot(KL)
         #plt.plot(data.loc[:, "KL_DETREND"])
         #plt.ylabel('some numbers')
         #plt.show()
+
+
         data["BASELINE"]=KL
 
 
