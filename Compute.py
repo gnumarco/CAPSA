@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import numpy as np
 from math import factorial
+import statistics as stats
 import matplotlib.pyplot as plt
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
@@ -35,8 +36,20 @@ def func(row):
 def calc_trend(row):
     return(1.0/( row["volumen"]/(1.0/52.0)))
 
+#Takes a row and returns KL_DETREND or 0 corresponding to the value in promo columns
+def ventapromo(row):
+    if row["TEMAT"]==0:
+        return 0
+    else: return row["KL_DETREND"]
+
+#Takes a row and returns EUROS_DETREND or 0 corresponding to the value in promo columns
+def eurospromo(row):
+    if row["TEMAT"]=="0":
+        return 0
+    else: return row["EUROS_DETREND"]
+
 # Establish connection to SAP HANA server
-cnxn = pyodbc.connect('Driver=HDBODBC;SERVERNODE=bwdbprod:30041;UID=SAPEP01;PWD=EfiProm2017')
+cnxn = pyodbc.connect('Driver=HDBODBC;SERVERNODE=172.31.100.155:30041;UID=SAPEP01;PWD=EfiProm2017')
 
 # Gets a cursor on the server to perform query
 cursor = cnxn.cursor()
@@ -134,6 +147,33 @@ for ent in entries:
             # key = col_name
             dict1.update({"MAT":row[0], "ENS":row[1], "PTVENTA":row[2], "FAMAPO":int(row[3]), "CANT":float(row[5]), "KL":float(row[6]), "IMP":float(row[7]), "DATE":myDate})
             #print(dict1)
+
+            # We read promotion file
+            promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1710_II.xlsx"
+            promo = pd.read_excel(promo_file)
+
+            value=False
+            #we search if the product in dict has promo
+            for j in range(0, len(promo.index)):
+                row_promo = promo.loc[j, :]
+                if (not np.math.isnan(row_promo[7])):
+                    if dict1["ENS"]==row_promo[2] and dict1["FAMAPO"]==row_promo[7]:
+                        if dict1["DATE"]<=row_promo[4] and dict1["DATE"]>=row_promo[3]:
+                            value=True
+                            row_aux=j
+
+            #value=True --> the product has promo
+            if value:
+                dict1.update({"ANIM1":promo.iloc[row_aux]["Animacion 1"], "ANIM2":promo.iloc[row_aux]["Animacion 2"],
+                              "ANIM3":promo.iloc[row_aux]["Animacion 3"],
+                              "ABREVACC":promo.iloc[row_aux]["Abreviatura accion"],
+                              "TEMAT":promo.iloc[row_aux]["TEMATICA"]})
+
+            else:
+                dict1.update({"ANIM1": 0, "ANIM2": 0,
+                              "ANIM3": 0, "ABREVACC": 0,"TEMAT": 0})
+
+            #print(dict1)
             rows_list.append(dict1)
 
         # We build the complete dataframe with all the rows: now we have exactly one row per day, without any missing value
@@ -146,7 +186,7 @@ for ent in entries:
             #print(total)
 
             # We read the seasonality file
-            station_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\New Data\\Tabla_estacionalidad fichero carga.xlsx"
+            station_file = "C:\\Users\\tr5568\\Desktop\\DAYANA\\CAPSA\\Tabla_estacionalidad fichero carga.xlsx"
             station = pd.read_excel(station_file,1)
             #print(station)
 
@@ -167,15 +207,84 @@ for ent in entries:
             total["KL_DETREND"] = total.loc[:, "KL"] * total.loc[:, "TREND"]
             total["EUROS_DETREND"] = total.loc[:, "IMP"] * total.loc[:, "TREND"]
             # Now we have a dataframe with detrended columns
+
             print(total)
             if cpt ==0:
                 total.to_csv("Dayana.csv", sep=",", index = False)
             else:
                 total.to_csv("Dayana.csv", mode='a', header=False, sep=",", index=False)
-            #KL = np.array(total.loc[:,"KL_DETREND"])
-            #KL = savitzky_golay(KL, 61, 1)  # window size 51, polynomial order 3
-            #plt.plot(KL)
+
+
+            #BASELINE calculation
+            BASELINE=np.array(total.loc[:,"KL_DETREND"])
+
+            #using windows
+            if len(BASELINE) >= 7:
+                for i, x in enumerate(BASELINE):
+                    if i >= 3 and i < len(BASELINE) - 3:
+                        average = 0
+                        vector = []
+                        vector.append(BASELINE[i])
+                        for j in range(1, 4):
+                            vector.append(BASELINE[i - 1])
+                            vector.append(BASELINE[i + 1])
+                        for j, y in enumerate(vector):
+                            average += y
+                        average = average / len(vector)
+                        var = stats.stdev(vector, average)
+                        #vector_average.append(average)
+                        #vector_var.append(var)
+                        if abs(BASELINE[i]) > average + var or abs(BASELINE[i]) < average - var:
+                            BASELINE[i] = average
+                    else:
+                        if i in [0, 1, 2]:
+                            vector = []
+                            average = 0
+                            for b in range(0, 7):
+                                vector.append(BASELINE[i])
+                            for b, x in enumerate(vector):
+                                average += x
+                            average = average / len(vector)
+                            var = stats.stdev(vector, average)
+                            #vector_average.append(average)
+                            #vector_var.append(var)
+                            if abs(BASELINE[i]) > average + var or abs(BASELINE[i]) < average - var:
+                                BASELINE[i] = average
+
+                        if i in [len(BASELINE) - 1, len(BASELINE) - 2, len(BASELINE) - 3]:
+                            vector = []
+                            average = 0
+                            for b in range(1, 8):
+                                vector.append(BASELINE[len(BASELINE) - b])
+                            for j, y in enumerate(vector):
+                                average += y
+                            average = average / len(vector)
+                            var = stats.stdev(vector, average)
+                            #vector_average.append(average)
+                            #vector_var.append(var)
+                            if abs(BASELINE[i]) > average + var or abs(BASELINE[i]) < average - var:
+                                BASELINE[i] = average
+
+
+            #plt.plot(BASELINE)
+
+            #Replace 0 for median of BASELINE vector (without 0 values)
+            median=float(np.median(BASELINE[BASELINE>0]))
+            BASELINE[BASELINE==0]=median
+            #Savitzky
+            BASELINE= savitzky_golay(BASELINE, 51, 3)  # window size 51, polynomial order 3
+            #Add BASELINE column to our dataframe
+            total["BASELINE"]=BASELINE
+            #Add incremental KL_DETREND column to our dataframe
+            total["VENTA_INCREMENTAL"] = total.loc[:, "KL_DETREND"] - total.loc[:, "BASELINE"]
+            #Add VENTA_PROMO to our dataframe
+            total["VENTA_PROMO"]=total.apply(ventapromo, axis=1)
+            #Add EUROS_PROMO to our dataframe
+            total["EUROS_PROMO"] = total.apply(eurospromo, axis=1)
+            #print(total)
+            #plt.plot(BASELINE)
             #plt.plot(total.loc[:,"KL_DETREND"])
             #plt.ylabel('some numbers')
             #plt.show()
         cpt += 1
+
