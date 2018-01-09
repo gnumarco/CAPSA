@@ -5,6 +5,8 @@ import numpy as np
 from math import factorial
 import statistics as stats
 import matplotlib.pyplot as plt
+from datetime import timedelta
+
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     try:
@@ -38,13 +40,13 @@ def calc_trend(row):
 
 #Takes a row and returns KL_DETREND or 0 corresponding to the value in promo columns
 def ventapromo(row):
-    if row["TEMAT"]==0:
+    if row["TEMATICA"]==0:
         return 0
     else: return row["KL_DETREND"]
 
 #Takes a row and returns EUROS_DETREND or 0 corresponding to the value in promo columns
 def eurospromo(row):
-    if row["TEMAT"]=="0":
+    if row["TEMATICA"]==0:
         return 0
     else: return row["EUROS_DETREND"]
 
@@ -66,18 +68,39 @@ for row in cursor.fetchall():
     entries.append(row)
 
 print(entries)
-print(len(entries))
+
 
 interp = False
 
-############### This part of the code has to be executed for each "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination !!!!!!!!
+############### This part of the code has to be executed for each "Material"+"Enseña"+"Control Data"+"Familia APO" combination !!!!!!!!
 
-# To test. In production, this is derived from the "Material"+"Enseña"+"Punto de Venta"+"Familia APO" that is processed
+# To test. In production, this is derived from the "Material"+"Enseña"+"Control Data"+"Familia APO" that is processed
 cpt = 0
 df_total=None
-# We read promotion file
+
+# We read promotion file and make a new dataframe to use the function "join" in order to calculate promos
 promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1710_II.xlsx"
 promo = pd.read_excel(promo_file)
+df_promo=pd.DataFrame(columns=["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion"])
+cont=0
+for i in range(0,len(promo.index)):
+    row_promo=promo.loc[i,:]
+    diff=row_promo[4]-row_promo[3]
+    df_promo.loc[cont]=[row_promo[2], row_promo[7], row_promo[3], row_promo[9],row_promo[10],row_promo[11], row_promo[14],row_promo[8]]
+    cont+=1
+    for j in range(1,diff.days):
+        #print(j)
+        #print(row_promo[3]+j+1)
+        #print(type(row_promo[3]))
+        d=timedelta(days=j)
+        df_promo.loc[cont] = [row_promo[2], row_promo[7], row_promo[3]+d, row_promo[9],row_promo[10],row_promo[11], row_promo[14],row_promo[8]]
+        cont+=1
+    df_promo.loc[cont]=[row_promo[2] , row_promo[7], row_promo[4],row_promo[9],row_promo[10],row_promo[11], row_promo[14],row_promo[8]]
+    cont+=1
+    print(cont)
+    #print(df_promo)
+
+
 # We read the seasonality file
 station_file = "C:\\Users\\tr5568\\Desktop\\DAYANA\\CAPSA\\Tabla_estacionalidad fichero carga.xlsx"
 station = pd.read_excel(station_file, 1)
@@ -160,29 +183,28 @@ for ent in entries:
             #print(dict1)
 
 
-
-            value=False
+            #value=False
             #we search if the product in dict has promo
-            print("ANTES DE BUCLE FOR EN PROMOS")
-            for j in range(0, len(promo.index)):
-                row_promo = promo.loc[j, :]
-                if (not np.math.isnan(row_promo[7])):
-                    if dict1["ENS"]==row_promo[2] and dict1["FAMAPO"]==row_promo[7]:
-                        if dict1["DATE"]<=row_promo[4] and dict1["DATE"]>=row_promo[3]:
-                            value=True
-                            row_aux=j
+            #print("ANTES DE BUCLE FOR EN PROMOS")
+            #for j in range(0, len(promo.index)):
+            #    row_promo = promo.loc[j, :]
+            #    if (not np.math.isnan(row_promo[7])):
+            #        if dict1["ENS"]==row_promo[2] and dict1["FAMAPO"]==row_promo[7]:
+            #            if dict1["DATE"]<=row_promo[4] and dict1["DATE"]>=row_promo[3]:
+            #                value=True
+            #                row_aux=j
 
-            print("DESPUÉS DE BUCLE FOR EN PROMOS")
+            #print("DESPUÉS DE BUCLE FOR EN PROMOS")
             #value=True --> the product has promo
-            if value:
-                dict1.update({"ANIM1":promo.iloc[row_aux]["Animacion 1"], "ANIM2":promo.iloc[row_aux]["Animacion 2"],
-                              "ANIM3":promo.iloc[row_aux]["Animacion 3"],
-                              "ABREVACC":promo.iloc[row_aux]["Abreviatura accion"],
-                              "TEMAT":promo.iloc[row_aux]["TEMATICA"]})
+            #if value:
+            #    dict1.update({"ANIM1":promo.iloc[row_aux]["Animacion 1"], "ANIM2":promo.iloc[row_aux]["Animacion 2"],
+            #                  "ANIM3":promo.iloc[row_aux]["Animacion 3"],
+            #                  "ABREVACC":promo.iloc[row_aux]["Abreviatura accion"],
+            #                  "TEMAT":promo.iloc[row_aux]["TEMATICA"]})
 
-            else:
-                dict1.update({"ANIM1": 0, "ANIM2": 0,
-                              "ANIM3": 0, "ABREVACC": 0,"TEMAT": 0})
+            #else:
+            #   dict1.update({"ANIM1": 0, "ANIM2": 0,
+            #                  "ANIM3": 0, "ABREVACC": 0,"TEMAT": 0})
 
             #print(dict1)
             rows_list.append(dict1)
@@ -290,6 +312,17 @@ for ent in entries:
                         ventana=len(BASELINE)
                 BASELINE= savitzky_golay(BASELINE, ventana, 2)  # window size 51, polynomial order 3
 
+            #insert promo columns in dataframe using join
+            total = total.join(
+                df_promo.set_index(['FAMAPO', 'DATE', 'ENS']),
+                on=['FAMAPO', 'DATE', 'ENS'])
+
+            total.replace({'Animacion 1': {None: 0}}, inplace=True)
+            total.replace({'Animacion 2': {None: 0}}, inplace=True)
+            total.replace({'Animacion 3': {None: 0}}, inplace=True)
+            total.replace({'TEMATICA': {None: 0}}, inplace=True)
+            total.replace({'Abreviatura accion': {None: 0}}, inplace=True)
+
 
             #Add BASELINE column to our dataframe
             total["BASELINE"]=BASELINE
@@ -305,24 +338,24 @@ for ent in entries:
             #plt.ylabel('some numbers')
             #plt.show()
 
-
             if df_total is None:
                 df_total=total
+                print("None")
             else:
-                df_total.append(total)
+                df_total=df_total.append(total)
+                print("append")
         cpt += 1
 
-
-
+print("DF ANTES DE CANIB")
+print(df_total)
 
 #We read canib file
 canib_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Canib.xlsx"
 canib_excel = pd.read_excel(canib_file)
 df_total = df_total.join(canib_excel.set_index('Cod. Familia'), on='FAMAPO')
-print(df_total)
+#print(df_total)
 df_total.replace({'Grupo canibalizacion': {None: -1}}, inplace=True)
 #group by Grupo canibalizacion and DATE
-print(df_total)
 data_canib=df_total.groupby(['Grupo canibalizacion', 'DATE'])
 
 
@@ -339,26 +372,29 @@ df_KLdetrend=data_canib['KL_DETREND'].agg(['sum','size']).reset_index()
 canib=[]
 
 for i in range(0, len(df_total.index)):
-    row_data = df_total.loc[i, :]
+    row_data = df_total.iloc[i]
     # print(row_data)
-    if row_data[10] == 0 or row_data[14] == -1:
+    if row_data["KL_DETREND"] == 0 or row_data["Grupo canibalizacion"] == -1:
         canib.append(0)
     else:
-        aux_base = df_baseline[(df_baseline['Grupo canibalizacion'] == row_data[21]) & (df_baseline['DATE'] == row_data[5])]
-        aux_KLdetrend = df_KLdetrend[(df_KLdetrend['Grupo canibalizacion'] == row_data[21]) & (df_KLdetrend['DATE'] == row_data[5])]
+        aux_base = df_baseline[(df_baseline['Grupo canibalizacion'] == row_data['Grupo canibalizacion']) & (df_baseline['DATE'] == row_data["DATE"])]
+        aux_KLdetrend = df_KLdetrend[(df_KLdetrend['Grupo canibalizacion'] == row_data["Grupo canibalizacion"]) & (df_KLdetrend['DATE'] == row_data["DATE"])]
         # print((aux_base['sum']-row_data[13])/(aux_base['size']-1)-((aux_KLdetrend['sum']-row_data[11])/(aux_KLdetrend['size']-1)))
-        print('aux baseline')
-        print(aux_base)
-        print('aux KL detrend')
-        print(aux_KLdetrend)
+        #print('aux baseline')
+        #print(aux_base)
+        #print('aux KL detrend')
+        #print(aux_KLdetrend)
         if (aux_KLdetrend['size'].iloc[0] <= 1):
             canib.append(0)
         else:
-            canib.append(float(((aux_KLdetrend['sum'] - row_data[15]) / (aux_KLdetrend['size'] - 1)) - (
-            (aux_base['sum'] - row_data[17]) / (aux_base['size'] - 1))))
+            canib.append(float(((aux_KLdetrend['sum'] - row_data["KL_DETREND"]) / (aux_KLdetrend['size'] - 1)) - (
+            (aux_base['sum'] - row_data["BASELINE"]) / (aux_base['size'] - 1))))
 
 #add the new calculated column to our data
 df_total["CANIBALIZACION"]=canib
 
+df_total.index=len(df_total)
+print("DF CON CANIBALIZACIÓN")
+print(df_total)
 # we write data in a csv file
 df_total.to_csv("data_canib.csv", sep=',')
