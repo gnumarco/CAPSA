@@ -40,13 +40,13 @@ def calc_trend(row):
 
 #Takes a row and returns KL_DETREND or 0 corresponding to the value in promo columns
 def ventapromo(row):
-    if row["TEMATICA"]==0:
+    if row["Animacion 1"]==0:
         return 0
     else: return row["KL_DETREND"]
 
 #Takes a row and returns EUROS_DETREND or 0 corresponding to the value in promo columns
 def eurospromo(row):
-    if row["TEMATICA"]==0:
+    if row["Animacion 1"]==0:
         return 0
     else: return row["EUROS_DETREND"]
 
@@ -81,21 +81,33 @@ df_total=None
 # We read promotion file and make a new dataframe to use the function "join" in order to calculate promos
 promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1710_II.xlsx"
 promo = pd.read_excel(promo_file)
+#print(promo.duplicated())
+promo=promo.drop_duplicates()
+promo=promo.reset_index(drop=True)
+print(len(promo))
+print(promo)
+
 df_promo=pd.DataFrame(columns=["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion"])
 cont=0
+days_before=0
+days_after=0
 for i in range(0,len(promo.index)):
     row_promo=promo.loc[i,:]
-    diff=row_promo[4]-row_promo[3]
-    df_promo.loc[cont]=[row_promo[2], row_promo[7], row_promo[3], row_promo[9],row_promo[10],row_promo[11], row_promo[14],row_promo[8]]
+    print(row_promo["Animacion 1"])
+    #print(type(row_promo[4]))
+    last_date=row_promo[4]+timedelta(days=days_after)
+    first_date=row_promo[3]-timedelta(days=days_before)
+    diff=last_date-(first_date-timedelta(days=days_before))
+    df_promo.loc[cont]=[row_promo["ENS"], row_promo["FAMAPO"], first_date, row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"], row_promo["TEMATICA"],row_promo["Abreviatura accion"]]
     cont+=1
     for j in range(1,diff.days):
         #print(j)
         #print(row_promo[3]+j+1)
         #print(type(row_promo[3]))
         d=timedelta(days=j)
-        df_promo.loc[cont] = [row_promo[2], row_promo[7], row_promo[3]+d, row_promo[9],row_promo[10],row_promo[11], row_promo[14],row_promo[8]]
+        df_promo.loc[cont] = [row_promo[2], row_promo[7], first_date+d, row_promo[9],row_promo[10],row_promo[11], row_promo[14],row_promo[8]]
         cont+=1
-    df_promo.loc[cont]=[row_promo[2] , row_promo[7], row_promo[4],row_promo[9],row_promo[10],row_promo[11], row_promo[14],row_promo[8]]
+    df_promo.loc[cont]=[row_promo[2] , row_promo[7], last_date+timedelta(days=days_after),row_promo[9],row_promo[10],row_promo[11], row_promo[14],row_promo[8]]
     cont+=1
     print(cont)
     #print(df_promo)
@@ -105,8 +117,9 @@ for i in range(0,len(promo.index)):
 station_file = "C:\\Users\\tr5568\\Desktop\\DAYANA\\CAPSA\\Tabla_estacionalidad fichero carga.xlsx"
 station = pd.read_excel(station_file, 1)
 for ent in entries:
-    if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
-    #if ent[3] =="341" and ent[1] == "Z5E99K" and ent[0]=="000000000000013225" and ent[2]=="0000005317":
+    #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
+    if ent[1]=="Z5E99K":
+    #if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062":
         SFAPO = int(ent[3])
 
         #### This query has to be adapted for each "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
@@ -132,6 +145,7 @@ for ent in entries:
 
         # We iterate in each row of the result
         for row in cursor.fetchall():
+            print(row)
             # We get the date of the row and cast it to a datetime
             myDate = datetime.datetime.strptime(row[4],'%Y%m%d')
 
@@ -213,15 +227,16 @@ for ent in entries:
         print("CONSTRUYENDO TOTAL DF")
         if(len(rows_list)>0):
             total = pd.DataFrame(rows_list)
-            #print(total)
+
 
             # We add a column with the week number
             total["WEEK"] = total.apply(func, axis=1)
-            #print(total)
-
+            print(total)
 
             # See if we have to detrend: we look if the SFAPO that we are computing is present in the seasonality file
-            if SFAPO in station.loc[:,"cod sfapo"]:
+            vector_station=station.loc[:,"cod sfapo"].values
+            print(SFAPO in station.loc[:,"cod sfapo"])
+            if SFAPO in vector_station:
                 print("Detrending")
                 #print(station[station["cod sfapo"]==SFAPO])
                 total = pd.merge(total, station, left_on=["FAMAPO", "WEEK"], right_on=["cod sfapo", "semana"])
@@ -279,7 +294,7 @@ for ent in entries:
                             var = stats.stdev(vector, average)
                             #vector_average.append(average)
                             #vector_var.append(var)
-                            if abs(BASELINE[i]) > average + var or abs(BASELINE[i]) < average - var:
+                            if abs(BASELINE[i]) > average + float(var/2) or abs(BASELINE[i]) < average - var:
                                 BASELINE[i] = average
 
                         if i in [len(BASELINE) - 1, len(BASELINE) - 2, len(BASELINE) - 3]:
@@ -293,7 +308,7 @@ for ent in entries:
                             var = stats.stdev(vector, average)
                             #vector_average.append(average)
                             #vector_var.append(var)
-                            if abs(BASELINE[i]) > average + var or abs(BASELINE[i]) < average - var:
+                            if abs(BASELINE[i]) > average + float(var/2) or abs(BASELINE[i]) < average - var:
                                 BASELINE[i] = average
 
 
@@ -302,6 +317,9 @@ for ent in entries:
             median=float(np.median(BASELINE[BASELINE>0]))
             BASELINE[BASELINE==0]=median
 
+            #print("BASELINE ANTES DE SAV")
+            #print(BASELINE)
+            #print(len(BASELINE))
             #Savitzky
             ventana=51
             if(len(BASELINE)>30):
@@ -311,7 +329,9 @@ for ent in entries:
                     else:
                         ventana=len(BASELINE)
                 BASELINE= savitzky_golay(BASELINE, ventana, 2)  # window size 51, polynomial order 3
-
+            print("BASELINE DESPUÉS DE SAV")
+            print(BASELINE)
+            print(len(BASELINE))
             #insert promo columns in dataframe using join
             total = total.join(
                 df_promo.set_index(['FAMAPO', 'DATE', 'ENS']),
@@ -323,7 +343,8 @@ for ent in entries:
             total.replace({'TEMATICA': {None: 0}}, inplace=True)
             total.replace({'Abreviatura accion': {None: 0}}, inplace=True)
 
-
+            print("TAM DE TOTAL")
+            print(len(total))
             #Add BASELINE column to our dataframe
             total["BASELINE"]=BASELINE
             #Add incremental KL_DETREND column to our dataframe
@@ -337,17 +358,20 @@ for ent in entries:
             #plt.plot(total.loc[:,"KL_DETREND"])
             #plt.ylabel('some numbers')
             #plt.show()
+            #print("LONGITUD DE TOTAL")
+            #print(len(total))
 
             if df_total is None:
                 df_total=total
                 print("None")
             else:
-                df_total=df_total.append(total)
+                df_total=df_total.append(total, ignore_index=True)
                 print("append")
+
         cpt += 1
 
-print("DF ANTES DE CANIB")
-print(df_total)
+#print("DF ANTES DE CANIB")
+#print(df_total)
 
 #We read canib file
 canib_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Canib.xlsx"
@@ -393,8 +417,8 @@ for i in range(0, len(df_total.index)):
 #add the new calculated column to our data
 df_total["CANIBALIZACION"]=canib
 
-df_total.index=len(df_total)
-print("DF CON CANIBALIZACIÓN")
-print(df_total)
+#df_total.index=len(df_total)
+#print("DF CON CANIBALIZACIÓN")
+#print(df_total)
 # we write data in a csv file
 df_total.to_csv("data_canib.csv", sep=',')
