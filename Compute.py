@@ -93,21 +93,27 @@ days_before=0
 days_after=0
 for i in range(0,len(promo.index)):
     row_promo=promo.loc[i,:]
-    print(row_promo["Animacion 1"])
+    #print(row_promo["Animacion 1"])
     #print(type(row_promo[4]))
     last_date=row_promo[4]+timedelta(days=days_after)
     first_date=row_promo[3]-timedelta(days=days_before)
     diff=last_date-(first_date-timedelta(days=days_before))
-    df_promo.loc[cont]=[row_promo["ENS"], row_promo["FAMAPO"], first_date, row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"], row_promo["TEMATICA"],row_promo["Abreviatura accion"]]
+    df_promo.loc[cont]=[row_promo["COD ENSEÑA"], row_promo[" CODFamilia apo"], first_date,
+                        row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
+                        row_promo["TEMATICA"],row_promo["Abreviatura accion"]]
     cont+=1
     for j in range(1,diff.days):
         #print(j)
         #print(row_promo[3]+j+1)
         #print(type(row_promo[3]))
         d=timedelta(days=j)
-        df_promo.loc[cont] = [row_promo[2], row_promo[7], first_date+d, row_promo[9],row_promo[10],row_promo[11], row_promo[14],row_promo[8]]
+        df_promo.loc[cont] = [row_promo["COD ENSEÑA"], row_promo[" CODFamilia apo"], first_date+d,
+                              row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
+                              row_promo["TEMATICA"],row_promo["Abreviatura accion"]]
         cont+=1
-    df_promo.loc[cont]=[row_promo[2] , row_promo[7], last_date+timedelta(days=days_after),row_promo[9],row_promo[10],row_promo[11], row_promo[14],row_promo[8]]
+    df_promo.loc[cont]=[row_promo["COD ENSEÑA"] , row_promo[" CODFamilia apo"], last_date+timedelta(days=days_after),
+                        row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
+                        row_promo["TEMATICA"],row_promo["Abreviatura accion"]]
     cont+=1
     print(cont)
     #print(df_promo)
@@ -120,7 +126,10 @@ for ent in entries:
     #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
     if ent[1]=="Z5E99K":
     #if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062":
-        SFAPO = int(ent[3])
+        print("VALOR DE SFAPO: ")
+        print(str(ent[3]))
+        if(str(ent[3])==None): SFAPO=0
+        else: SFAPO = int(ent[3])
 
         #### This query has to be adapted for each "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
         ## This part of the query stays fixed
