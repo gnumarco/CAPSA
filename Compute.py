@@ -50,6 +50,16 @@ def eurospromo(row):
         return 0
     else: return row["EUROS_DETREND"]
 
+def ispromo(row):
+    if row["Animacion 1"]==0:
+        return 0
+    else: return "P"
+
+def replace(row):
+    if row["KL_DETREND"]<=2:
+        return row["KL_DETREND"]
+    else: return row["BASELINE"]
+
 # Establish connection to SAP HANA server
 cnxn = pyodbc.connect('Driver=HDBODBC;SERVERNODE=172.31.100.155:30041;UID=SAPEP01;PWD=EfiProm2017')
 
@@ -87,7 +97,7 @@ promo=promo.reset_index(drop=True)
 print(len(promo))
 print(promo)
 
-df_promo=pd.DataFrame(columns=["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion"])
+df_promo=pd.DataFrame(columns=["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion", "CDATA"])
 cont=0
 days_before=0
 days_after=0
@@ -100,7 +110,7 @@ for i in range(0,len(promo.index)):
     diff=last_date-(first_date-timedelta(days=days_before))
     df_promo.loc[cont]=[row_promo["COD ENSEÑA"], row_promo[" CODFamilia apo"], first_date,
                         row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
-                        row_promo["TEMATICA"],row_promo["Abreviatura accion"]]
+                        row_promo["TEMATICA"],row_promo["Abreviatura accion"], row_promo["CODIGO CLIENTE"]]
     cont+=1
     for j in range(1,diff.days):
         #print(j)
@@ -109,11 +119,11 @@ for i in range(0,len(promo.index)):
         d=timedelta(days=j)
         df_promo.loc[cont] = [row_promo["COD ENSEÑA"], row_promo[" CODFamilia apo"], first_date+d,
                               row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
-                              row_promo["TEMATICA"],row_promo["Abreviatura accion"]]
+                              row_promo["TEMATICA"],row_promo["Abreviatura accion"], row_promo["CODIGO CLIENTE"]]
         cont+=1
     df_promo.loc[cont]=[row_promo["COD ENSEÑA"] , row_promo[" CODFamilia apo"], last_date+timedelta(days=days_after),
                         row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
-                        row_promo["TEMATICA"],row_promo["Abreviatura accion"]]
+                        row_promo["TEMATICA"],row_promo["Abreviatura accion"], row_promo["CODIGO CLIENTE"]]
     cont+=1
     print(cont)
     #print(df_promo)
@@ -124,11 +134,11 @@ station_file = "C:\\Users\\tr5568\\Desktop\\DAYANA\\CAPSA\\Tabla_estacionalidad 
 station = pd.read_excel(station_file, 1)
 for ent in entries:
     #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
-    if ent[1]=="Z5E99K":
+    if ent[1]=="Z5E99K" and ent[3]!="111":
     #if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062":
         print("VALOR DE SFAPO: ")
         print(str(ent[3]))
-        if(str(ent[3])==None): SFAPO=0
+        if(str(ent[3])==''): SFAPO=0
         else: SFAPO = int(ent[3])
 
         #### This query has to be adapted for each "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
@@ -202,7 +212,9 @@ for ent in entries:
             dict1 = {}
             # get input row in dictionary format
             # key = col_name
-            dict1.update({"MAT":row[0], "ENS":row[1], "CDATA":row[2], "FAMAPO":int(row[3]), "CANT":float(row[5]), "KL":float(row[6]), "IMP":float(row[7]), "DATE":myDate})
+            if str(row[3])=='': FAMAPO=0
+            else: FAMAPO=int(row[3])
+            dict1.update({"MAT":row[0], "ENS":row[1], "CDATA":row[2], "FAMAPO":FAMAPO, "CANT":float(row[5]), "KL":float(row[6]), "IMP":float(row[7]), "DATE":myDate})
             #print(dict1)
 
 
@@ -240,7 +252,7 @@ for ent in entries:
 
             # We add a column with the week number
             total["WEEK"] = total.apply(func, axis=1)
-            print(total)
+            #print(total)
 
             # See if we have to detrend: we look if the SFAPO that we are computing is present in the seasonality file
             vector_station=station.loc[:,"cod sfapo"].values
@@ -326,6 +338,45 @@ for ent in entries:
             median=float(np.median(BASELINE[BASELINE>0]))
             BASELINE[BASELINE==0]=median
 
+            #insert promo columns in dataframe using join
+            total = total.join(
+                df_promo.set_index(['FAMAPO', 'DATE', 'ENS','CDATA']),
+                on=['FAMAPO', 'DATE', 'ENS','CDATA'])
+
+            total.replace({'Animacion 1': {None: 0}}, inplace=True)
+            total.replace({'Animacion 2': {None: 0}}, inplace=True)
+            total.replace({'Animacion 3': {None: 0}}, inplace=True)
+            total.replace({'TEMATICA': {None: 0}}, inplace=True)
+            total.replace({'Abreviatura accion': {None: 0}}, inplace=True)
+
+            #we calculate a new row called STATUS PROMO ("P" if there is promo)
+            total["STATUS_PROMO"]=total.apply(ispromo,axis=1)
+
+            print(total)
+            #we want to replace values of baseline in promo days for average of KL_DETREND in days without promo
+            average_KL_DETREND_nopromo=0
+            aux=0
+
+            for i, x in enumerate(total["STATUS_PROMO"]):
+                if x!="P":
+                    average_KL_DETREND_nopromo+=total.loc[i,"KL_DETREND"]
+                    aux+=1
+
+
+            average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
+            print("AVERAGE KL_DETREND no promo")
+            print(average_KL_DETREND_nopromo)
+
+            #average_KL_DETREND_nopromo=float(np.median(total["KL_DETREND"][total["KL_DETREND"]!="P"]))
+            #print("AVERAGE METODO 2")
+            #print(average_KL_DETREND_nopromo)
+            for i,x in enumerate(total["STATUS_PROMO"]):
+                if x=="P": BASELINE[i]=average_KL_DETREND_nopromo
+
+
+            print("BASELINE CON KL_DETREND AVERAGE EN DÍAS CON PROMO")
+            print(BASELINE)
+
             #print("BASELINE ANTES DE SAV")
             #print(BASELINE)
             #print(len(BASELINE))
@@ -338,24 +389,21 @@ for ent in entries:
                     else:
                         ventana=len(BASELINE)
                 BASELINE= savitzky_golay(BASELINE, ventana, 2)  # window size 51, polynomial order 3
-            print("BASELINE DESPUÉS DE SAV")
+
+
+
+
+
+            # print("BASELINE DESPUÉS DE SAV")
             print(BASELINE)
             print(len(BASELINE))
-            #insert promo columns in dataframe using join
-            total = total.join(
-                df_promo.set_index(['FAMAPO', 'DATE', 'ENS']),
-                on=['FAMAPO', 'DATE', 'ENS'])
-
-            total.replace({'Animacion 1': {None: 0}}, inplace=True)
-            total.replace({'Animacion 2': {None: 0}}, inplace=True)
-            total.replace({'Animacion 3': {None: 0}}, inplace=True)
-            total.replace({'TEMATICA': {None: 0}}, inplace=True)
-            total.replace({'Abreviatura accion': {None: 0}}, inplace=True)
 
             print("TAM DE TOTAL")
             print(len(total))
             #Add BASELINE column to our dataframe
             total["BASELINE"]=BASELINE
+            #in days with low values of KL_DETREND we have to replace BASELINE value (BASELINE=KL_DETREND)
+            total["BASELINE"]=total.apply(replace,axis=1)
             #Add incremental KL_DETREND column to our dataframe
             total["VENTA_INCREMENTAL"] = total.loc[:, "KL_DETREND"] - total.loc[:, "BASELINE"]
             #Add VENTA_PROMO to our dataframe
@@ -378,6 +426,8 @@ for ent in entries:
                 print("append")
 
         cpt += 1
+        print("NÚMERO DE QUERYS REALIZADAS")
+        print(cpt)
 
 #print("DF ANTES DE CANIB")
 #print(df_total)
