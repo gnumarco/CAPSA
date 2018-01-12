@@ -56,9 +56,13 @@ def ispromo(row):
     else: return "P"
 
 def replace(row):
-    if row["KL_DETREND"]<=2:
+    if row["KL_DETREND"]<=0.1:
         return row["KL_DETREND"]
     else: return row["BASELINE"]
+
+def changepromo(row):
+    if row["STATUS_PROMO"]!="P":
+        print()
 
 # Establish connection to SAP HANA server
 cnxn = pyodbc.connect('Driver=HDBODBC;SERVERNODE=172.31.100.155:30041;UID=SAPEP01;PWD=EfiProm2017')
@@ -110,7 +114,7 @@ for i in range(0,len(promo.index)):
     diff=last_date-(first_date-timedelta(days=days_before))
     df_promo.loc[cont]=[row_promo["COD ENSEÑA"], row_promo[" CODFamilia apo"], first_date,
                         row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
-                        row_promo["TEMATICA"],row_promo["Abreviatura accion"], row_promo["CODIGO CLIENTE"]]
+                        row_promo["TEMATICA"],row_promo["Abreviatura accion"], int(row_promo["CODIGO CLIENTE"])]
     cont+=1
     for j in range(1,diff.days):
         #print(j)
@@ -119,15 +123,16 @@ for i in range(0,len(promo.index)):
         d=timedelta(days=j)
         df_promo.loc[cont] = [row_promo["COD ENSEÑA"], row_promo[" CODFamilia apo"], first_date+d,
                               row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
-                              row_promo["TEMATICA"],row_promo["Abreviatura accion"], row_promo["CODIGO CLIENTE"]]
+                              row_promo["TEMATICA"],row_promo["Abreviatura accion"], int(row_promo["CODIGO CLIENTE"])]
         cont+=1
     df_promo.loc[cont]=[row_promo["COD ENSEÑA"] , row_promo[" CODFamilia apo"], last_date+timedelta(days=days_after),
                         row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
-                        row_promo["TEMATICA"],row_promo["Abreviatura accion"], row_promo["CODIGO CLIENTE"]]
+                        row_promo["TEMATICA"],row_promo["Abreviatura accion"], int(row_promo["CODIGO CLIENTE"])]
     cont+=1
     print(cont)
     #print(df_promo)
 
+print(df_promo)
 
 # We read the seasonality file
 station_file = "C:\\Users\\tr5568\\Desktop\\DAYANA\\CAPSA\\Tabla_estacionalidad fichero carga.xlsx"
@@ -189,11 +194,11 @@ for ent in entries:
                     dicttmp = {}
                     if interp:
                         # We set the values of the new row to the same values as the last row, except for "CANT", "KL" and "IMP" where we interpolate: we divide the quantity of the last date between the number of missing days. We then set the date for this row to the current date
-                        dicttmp.update({"MAT": rows_list[-1]["MAT"], "ENS":rows_list[-1]["ENS"], "CDATA": rows_list[-1]["CDATA"], "FAMAPO": rows_list[-1]["FAMAPO"], "CANT": rows_list[-1]["CANT"]/float(diff), "KL": rows_list[-1]["KL"]/float(diff),
+                        dicttmp.update({"MAT": rows_list[-1]["MAT"], "ENS":rows_list[-1]["ENS"], "CDATA": int(rows_list[-1]["CDATA"]), "FAMAPO": rows_list[-1]["FAMAPO"], "CANT": rows_list[-1]["CANT"]/float(diff), "KL": rows_list[-1]["KL"]/float(diff),
                                      "IMP": rows_list[-1]["IMP"]/float(diff), "DATE": current_date})
                     else:
                         dicttmp.update({"MAT": rows_list[-1]["MAT"], "ENS": rows_list[-1]["ENS"],
-                                            "CDATA": rows_list[-1]["CDATA"], "FAMAPO": rows_list[-1]["FAMAPO"],
+                                            "CDATA": int(rows_list[-1]["CDATA"]), "FAMAPO": rows_list[-1]["FAMAPO"],
                                             "CANT": 0.0,
                                             "KL": 0.0,
                                             "IMP": 0.0, "DATE": current_date})
@@ -214,7 +219,7 @@ for ent in entries:
             # key = col_name
             if str(row[3])=='': FAMAPO=0
             else: FAMAPO=int(row[3])
-            dict1.update({"MAT":row[0], "ENS":row[1], "CDATA":row[2], "FAMAPO":FAMAPO, "CANT":float(row[5]), "KL":float(row[6]), "IMP":float(row[7]), "DATE":myDate})
+            dict1.update({"MAT":row[0], "ENS":row[1], "CDATA":int(row[2]), "FAMAPO":FAMAPO, "CANT":float(row[5]), "KL":float(row[6]), "IMP":float(row[7]), "DATE":myDate})
             #print(dict1)
 
 
@@ -342,6 +347,8 @@ for ent in entries:
             total = total.join(
                 df_promo.set_index(['FAMAPO', 'DATE', 'ENS','CDATA']),
                 on=['FAMAPO', 'DATE', 'ENS','CDATA'])
+            print("ANIMACIÓN 1")
+            print(total["Animacion 1"])
 
             total.replace({'Animacion 1': {None: 0}}, inplace=True)
             total.replace({'Animacion 2': {None: 0}}, inplace=True)
@@ -352,7 +359,8 @@ for ent in entries:
             #we calculate a new row called STATUS PROMO ("P" if there is promo)
             total["STATUS_PROMO"]=total.apply(ispromo,axis=1)
 
-            print(total)
+            print("STATUS PROMO")
+            print(total["STATUS_PROMO"])
             #we want to replace values of baseline in promo days for average of KL_DETREND in days without promo
             average_KL_DETREND_nopromo=0
             aux=0
@@ -362,20 +370,21 @@ for ent in entries:
                     average_KL_DETREND_nopromo+=total.loc[i,"KL_DETREND"]
                     aux+=1
 
-
-            average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
-            print("AVERAGE KL_DETREND no promo")
-            print(average_KL_DETREND_nopromo)
+            if aux!=0:
+                average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
+                for i,x in enumerate(total["STATUS_PROMO"]):
+                    if x=="P": BASELINE[i]=average_KL_DETREND_nopromo
+            #print("AVERAGE KL_DETREND no promo")
+            #print(average_KL_DETREND_nopromo)
 
             #average_KL_DETREND_nopromo=float(np.median(total["KL_DETREND"][total["KL_DETREND"]!="P"]))
             #print("AVERAGE METODO 2")
             #print(average_KL_DETREND_nopromo)
-            for i,x in enumerate(total["STATUS_PROMO"]):
-                if x=="P": BASELINE[i]=average_KL_DETREND_nopromo
 
 
-            print("BASELINE CON KL_DETREND AVERAGE EN DÍAS CON PROMO")
-            print(BASELINE)
+
+            #print("BASELINE CON KL_DETREND AVERAGE EN DÍAS CON PROMO")
+            #print(BASELINE)
 
             #print("BASELINE ANTES DE SAV")
             #print(BASELINE)
@@ -391,15 +400,12 @@ for ent in entries:
                 BASELINE= savitzky_golay(BASELINE, ventana, 2)  # window size 51, polynomial order 3
 
 
-
-
-
             # print("BASELINE DESPUÉS DE SAV")
-            print(BASELINE)
-            print(len(BASELINE))
+            #print(BASELINE)
+            #print(len(BASELINE))
 
-            print("TAM DE TOTAL")
-            print(len(total))
+            #print("TAM DE TOTAL")
+            #print(len(total))
             #Add BASELINE column to our dataframe
             total["BASELINE"]=BASELINE
             #in days with low values of KL_DETREND we have to replace BASELINE value (BASELINE=KL_DETREND)
@@ -438,46 +444,64 @@ canib_excel = pd.read_excel(canib_file)
 df_total = df_total.join(canib_excel.set_index('Cod. Familia'), on='FAMAPO')
 #print(df_total)
 df_total.replace({'Grupo canibalizacion': {None: -1}}, inplace=True)
-#group by Grupo canibalizacion and DATE
-data_canib=df_total.groupby(['Grupo canibalizacion', 'DATE'])
 
+
+#group by Grupo canibalizacion and DATE
+#data_canib=df_total.groupby(['Grupo canibalizacion', 'DATE'])
+#print(data_canib)
+
+#if we have a product without with the same "Grupo canibalizacion" and "DATE" of other in promo
+#we have to change "STATUS_PROMO" vector and we put a 'C' instead of a "0"
+for i in range(0, len(df_total.index)):
+    row_data=df_total.iloc[i,:]
+    #df_total[df_total["STATUS_PROMO"]].apply(changepromo,axis=1)
+    if row_data["STATUS_PROMO"]!="P":
+        aux_df=df_total[(df_total["Grupo canibalizacion"]==row_data["Grupo canibalizacion"]) & (df_total["DATE"]==row_data["DATE"])]
+        #print("DATAFRAME AUX")
+        #print(aux_df)
+        #print("COLUMNA STATUS PROMO")
+        #print(aux_df["STATUS_PROMO"])
+        #if any(aux_df["STATUS_PROMO"]=="P"):
+        if "P" in aux_df["STATUS_PROMO"].values:
+            df_total[i,"STATUS_PROMO"]="C"
+            print("ENTRO EN EL BUCLE Y CAMBIO EL DATO A C")
 
 #we have a new df with sum and size of BASELINE and KL_DETREND
 #we need this df to calculate canibalizacion
 #canibalizacion =
 #mean of KL_DETREND of all the products with the same Grupo canibalizacion (without the one we are considering) -
 # -mean of BASELINE of all the products with the same Grupo canibaliacion (without the one we are considering)
-df_baseline=data_canib['BASELINE'].agg(['sum','size']).reset_index()
-df_KLdetrend=data_canib['KL_DETREND'].agg(['sum','size']).reset_index()
+#df_baseline=data_canib['BASELINE'].agg(['sum','size']).reset_index()
+#df_KLdetrend=data_canib['KL_DETREND'].agg(['sum','size']).reset_index()
 #df_baseline.to_csv("df_baseline.csv", sep=',')
 #df_KLdetrend.to_csv("df_KLdetrend.csv", sep=',')
 
-canib=[]
+#canib=[]
 
-for i in range(0, len(df_total.index)):
-    row_data = df_total.iloc[i]
+#for i in range(0, len(df_total.index)):
+#    row_data = df_total.iloc[i]
     # print(row_data)
-    if row_data["KL_DETREND"] == 0 or row_data["Grupo canibalizacion"] == -1:
-        canib.append(0)
-    else:
-        aux_base = df_baseline[(df_baseline['Grupo canibalizacion'] == row_data['Grupo canibalizacion']) & (df_baseline['DATE'] == row_data["DATE"])]
-        aux_KLdetrend = df_KLdetrend[(df_KLdetrend['Grupo canibalizacion'] == row_data["Grupo canibalizacion"]) & (df_KLdetrend['DATE'] == row_data["DATE"])]
+#    if row_data["KL_DETREND"] == 0 or row_data["Grupo canibalizacion"] == -1:
+#        canib.append(0)
+#    else:
+#        aux_base = df_baseline[(df_baseline['Grupo canibalizacion'] == row_data['Grupo canibalizacion']) & (df_baseline['DATE'] == row_data["DATE"])]
+#        aux_KLdetrend = df_KLdetrend[(df_KLdetrend['Grupo canibalizacion'] == row_data["Grupo canibalizacion"]) & (df_KLdetrend['DATE'] == row_data["DATE"])]
         # print((aux_base['sum']-row_data[13])/(aux_base['size']-1)-((aux_KLdetrend['sum']-row_data[11])/(aux_KLdetrend['size']-1)))
         #print('aux baseline')
         #print(aux_base)
         #print('aux KL detrend')
         #print(aux_KLdetrend)
-        if (aux_KLdetrend['size'].iloc[0] <= 1):
-            canib.append(0)
-        else:
-            canib.append(float(((aux_KLdetrend['sum'] - row_data["KL_DETREND"]) / (aux_KLdetrend['size'] - 1)) - (
-            (aux_base['sum'] - row_data["BASELINE"]) / (aux_base['size'] - 1))))
+#        if (aux_KLdetrend['size'].iloc[0] <= 1):
+#            canib.append(0)
+#        else:
+#            canib.append(float(((aux_KLdetrend['sum'] - row_data["KL_DETREND"]) / (aux_KLdetrend['size'] - 1)) - (
+#            (aux_base['sum'] - row_data["BASELINE"]) / (aux_base['size'] - 1))))
 
 #add the new calculated column to our data
-df_total["CANIBALIZACION"]=canib
+#df_total["CANIBALIZACION"]=canib
 
 #df_total.index=len(df_total)
 #print("DF CON CANIBALIZACIÓN")
 #print(df_total)
 # we write data in a csv file
-df_total.to_csv("data_canib.csv", sep=',')
+df_total.to_csv("data_final.csv", sep=',')
