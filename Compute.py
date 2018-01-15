@@ -60,9 +60,12 @@ def replace(row):
         return row["KL_DETREND"]
     else: return row["BASELINE"]
 
-def changepromo(row):
+def changepromo(row, df_total):
     if row["STATUS_PROMO"]!="P":
-        print()
+        aux_df = df_total[(df_total["Grupo canibalizacion"] == row["Grupo canibalizacion"]) & (
+        df_total["DATE"] == row["DATE"])]
+        if "P" in aux_df["STATUS_PROMO"].values:
+            return "C"
 
 # Establish connection to SAP HANA server
 cnxn = pyodbc.connect('Driver=HDBODBC;SERVERNODE=172.31.100.155:30041;UID=SAPEP01;PWD=EfiProm2017')
@@ -452,9 +455,10 @@ df_total.replace({'Grupo canibalizacion': {None: -1}}, inplace=True)
 
 #if we have a product without with the same "Grupo canibalizacion" and "DATE" of other in promo
 #we have to change "STATUS_PROMO" vector and we put a 'C' instead of a "0"
+#df_total=df_total[df_total["STATUS_PROMO"]].apply(changepromo,axis=1)
 for i in range(0, len(df_total.index)):
     row_data=df_total.iloc[i,:]
-    #df_total[df_total["STATUS_PROMO"]].apply(changepromo,axis=1)
+
     if row_data["STATUS_PROMO"]!="P":
         aux_df=df_total[(df_total["Grupo canibalizacion"]==row_data["Grupo canibalizacion"]) & (df_total["DATE"]==row_data["DATE"])]
         #print("DATAFRAME AUX")
@@ -464,7 +468,8 @@ for i in range(0, len(df_total.index)):
         #if any(aux_df["STATUS_PROMO"]=="P"):
         if "P" in aux_df["STATUS_PROMO"].values:
             df_total[i,"STATUS_PROMO"]="C"
-            print("ENTRO EN EL BUCLE Y CAMBIO EL DATO A C")
+            print(i)
+            #print("ENTRO EN EL BUCLE Y CAMBIO EL DATO A C")
 
 #we have a new df with sum and size of BASELINE and KL_DETREND
 #we need this df to calculate canibalizacion
