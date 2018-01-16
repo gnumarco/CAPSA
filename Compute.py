@@ -452,17 +452,40 @@ df_total.replace({'Grupo canibalizacion': {None: -1}}, inplace=True)
 
 
 #group by Grupo canibalizacion and DATE
-#data_canib=df_total.groupby(['Grupo canibalizacion', 'DATE'])
-#print(data_canib)
+data_canib=df_total.groupby(['Grupo canibalizacion', 'DATE'])
+print(len(data_canib))
+dict_promo={}
+#we create a dictionary which shows if each group of "Grupo canibalizacion_DATE" has promo("P") or not
+for df in data_canib:
+    print(df)
+    print("df[0]")
+    print(df[0])
+    print("df[1]")
+    print(df[1])
+    if df[0]!=-1:
+        if "P" in df[1].reset_index(drop=True).loc[:,"STATUS_PROMO"].values:
+            dict_promo[str(df[1].reset_index(drop=True).loc[0,"Grupo canibalizacion"])+"_"+str(
+                df[1].reset_index(drop=True).loc[0,"DATE"])]="P"
+            print("RELLENANDO CON P")
+        else:
+            dict_promo[str(df[1].reset_index(drop=True).loc[0, "Grupo canibalizacion"]) + "_" + str(
+                df[1].reset_index(drop=True).loc[0, "DATE"])] = 0
+            print("RELLENANDO CON 0")
+
+print("DICCIONARIO PROMOS")
+print(dict_promo)
 
 #if we have a product without with the same "Grupo canibalizacion" and "DATE" of other in promo
 #we have to change "STATUS_PROMO" vector and we put a 'C' instead of "0"
-#df_total["STATUS_PROMO"]=df_total.apply(changepromo(df_total),axis=1)
-df_total["STATUS_PROMO"]=df_total.applymap(changepromo(df_total ,df_total["STATUS_PROMO"], df_total["Grupo canibalizacion"], df_total["DATE"]))
-#for i, row in df_total.iterrows():
-    #row_data=df_total.iloc[i,:]
 
-#    if row["STATUS_PROMO"]!="P":
+for i, row in df_total.iterrows():
+    #row_data=df_total.iloc[i,:]
+    key=str(row["Grupo canibalizacion"])+"_"+str(row["DATE"])
+    if key in dict_promo:
+        if dict_promo[key]=="P":
+            df_total[i,"STATUS_PROMO"]="C"
+            print("CAMBIANDO EL VALOR A C")
+
         #aux_df=df_total[(df_total["Grupo canibalizacion"]==row["Grupo canibalizacion"]) & (df_total["DATE"]==row["DATE"])]
         #print("DATAFRAME AUX")
         #print(aux_df)
