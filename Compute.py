@@ -478,7 +478,7 @@ print(dict_promo)
 #if we have a product without with the same "Grupo canibalizacion" and "DATE" of other in promo
 #we have to change "STATUS_PROMO" vector and we put a 'C' instead of "0"
 
-for i, row in df_total.iterrows():
+for i, row in enumerate(df_total.values):
     #row_data=df_total.iloc[i,:]
     key=str(row["Grupo canibalizacion"])+"_"+str(row["DATE"])
     if key in dict_promo:
