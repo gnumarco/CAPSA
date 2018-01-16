@@ -98,49 +98,63 @@ cpt = 0
 df_total=None
 
 # We read promotion file and make a new dataframe to use the function "join" in order to calculate promos
-promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1710_II.xlsx"
+promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1710_II.XLSX"
 promo = pd.read_excel(promo_file)
 #print(promo.duplicated())
 promo=promo.drop_duplicates()
 promo=promo.reset_index(drop=True)
-print(len(promo))
-print(promo)
+#print(len(promo))
+#print(promo)
+
 
 df_promo=pd.DataFrame(columns=["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion", "CDATA"])
+data_matrix = []
+
 cont=0
 days_before=0
 days_after=0
-for i in range(0,len(promo.index)):
-    row_promo=promo.loc[i,:]
+for row_promo in promo.values:
     #print(row_promo["Animacion 1"])
-    #print(type(row_promo[4]))
+    print(row_promo)
     last_date=row_promo[4]+timedelta(days=days_after)
     first_date=row_promo[3]-timedelta(days=days_before)
     diff=last_date-(first_date-timedelta(days=days_before))
-    df_promo.loc[cont]=[row_promo["COD ENSEÑA"], row_promo[" CODFamilia apo"], first_date,
-                        row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
-                        row_promo["TEMATICA"],row_promo["Abreviatura accion"], int(row_promo["CODIGO CLIENTE"])]
+    data_matrix.append([row_promo[2], row_promo[7], first_date,
+                        row_promo[9],row_promo[10],row_promo[11],
+                        row_promo[14],row_promo[9], int(row_promo[1])])
+    #df_promo.values[cont]=[row_promo[2], row_promo[7], first_date,
+    #                    row_promo[9],row_promo[10],row_promo[11],
+    #                    row_promo[14],row_promo[9], int(row_promo[1])]
     cont+=1
     for j in range(1,diff.days):
         #print(j)
         #print(row_promo[3]+j+1)
         #print(type(row_promo[3]))
         d=timedelta(days=j)
-        df_promo.loc[cont] = [row_promo["COD ENSEÑA"], row_promo[" CODFamilia apo"], first_date+d,
-                              row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
-                              row_promo["TEMATICA"],row_promo["Abreviatura accion"], int(row_promo["CODIGO CLIENTE"])]
+        data_matrix.append([row_promo[2], row_promo[7], first_date+d,
+                              row_promo[9], row_promo[10], row_promo[11],
+                              row_promo[14], row_promo[9], int(row_promo[1])])
+     #   df_promo.loc[cont] = [row_promo[2], row_promo[7], first_date+d,
+     #                         row_promo[9], row_promo[10], row_promo[11],
+     #                         row_promo[14], row_promo[9], int(row_promo[1])]
         cont+=1
-    df_promo.loc[cont]=[row_promo["COD ENSEÑA"] , row_promo[" CODFamilia apo"], last_date+timedelta(days=days_after),
-                        row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
-                        row_promo["TEMATICA"],row_promo["Abreviatura accion"], int(row_promo["CODIGO CLIENTE"])]
+    data_matrix.append([row_promo[2] , row_promo[7], last_date+timedelta(days=days_after),
+                        row_promo[9], row_promo[10], row_promo[11],
+                        row_promo[14], row_promo[9], int(row_promo[1])])
+    #df_promo.loc[cont]=[row_promo[2] , row_promo[7], last_date+timedelta(days=days_after),
+    #                    row_promo[9], row_promo[10], row_promo[11],
+    #                    row_promo[14], row_promo[9], int(row_promo[1])]
     cont+=1
     print(cont)
     #print(df_promo)
+df_promo = pd.DataFrame(data_matrix)
+df_promo.columns = ["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion", "CDATA"]
+
 
 print(df_promo)
 
 # We read the seasonality file
-station_file = "C:\\Users\\tr5568\\Desktop\\DAYANA\\CAPSA\\Tabla_estacionalidad fichero carga.xlsx"
+station_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\Tabla_estacionalidad fichero carga.xlsx"
 station = pd.read_excel(station_file, 1)
 for ent in entries:
     #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
@@ -444,7 +458,7 @@ for ent in entries:
 #print(df_total)
 
 #We read canib file
-canib_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Canib.xlsx"
+canib_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\Softwares\\Canib.xlsx.gsheet"
 canib_excel = pd.read_excel(canib_file)
 df_total = df_total.join(canib_excel.set_index('Cod. Familia'), on='FAMAPO')
 #print(df_total)
