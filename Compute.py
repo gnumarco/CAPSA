@@ -6,7 +6,7 @@ from math import factorial
 import statistics as stats
 import matplotlib.pyplot as plt
 from datetime import timedelta
-
+import csv
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     try:
@@ -101,41 +101,53 @@ df_total=None
 promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1710_II.xlsx"
 promo = pd.read_excel(promo_file)
 #print(promo.duplicated())
-promo=promo.drop_duplicates()
+promo=promo.drop_duplicates(subset=["COD ENSEÑA", "CODIGO CLIENTE", "Fecha inicio folleto","Fecha fin folleto"," CODFamilia apo"])
 promo=promo.reset_index(drop=True)
 print(len(promo))
 print(promo)
 
 df_promo=pd.DataFrame(columns=["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion", "CDATA"])
+data_matrix = []
+
 cont=0
 days_before=0
 days_after=0
-for i in range(0,len(promo.index)):
-    row_promo=promo.loc[i,:]
+for row_promo in promo.values:
     #print(row_promo["Animacion 1"])
-    #print(type(row_promo[4]))
+    print(row_promo)
     last_date=row_promo[4]+timedelta(days=days_after)
     first_date=row_promo[3]-timedelta(days=days_before)
     diff=last_date-(first_date-timedelta(days=days_before))
-    df_promo.loc[cont]=[row_promo["COD ENSEÑA"], row_promo[" CODFamilia apo"], first_date,
-                        row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
-                        row_promo["TEMATICA"],row_promo["Abreviatura accion"], int(row_promo["CODIGO CLIENTE"])]
+    data_matrix.append([row_promo[2], row_promo[7], first_date,
+                        row_promo[9],row_promo[10],row_promo[11],
+                        row_promo[14],row_promo[9], int(row_promo[1])])
+    #df_promo.values[cont]=[row_promo[2], row_promo[7], first_date,
+    #                    row_promo[9],row_promo[10],row_promo[11],
+    #                    row_promo[14],row_promo[9], int(row_promo[1])]
     cont+=1
     for j in range(1,diff.days):
         #print(j)
         #print(row_promo[3]+j+1)
         #print(type(row_promo[3]))
         d=timedelta(days=j)
-        df_promo.loc[cont] = [row_promo["COD ENSEÑA"], row_promo[" CODFamilia apo"], first_date+d,
-                              row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
-                              row_promo["TEMATICA"],row_promo["Abreviatura accion"], int(row_promo["CODIGO CLIENTE"])]
+        data_matrix.append([row_promo[2], row_promo[7], first_date+d,
+                              row_promo[9], row_promo[10], row_promo[11],
+                              row_promo[14], row_promo[9], int(row_promo[1])])
+     #   df_promo.loc[cont] = [row_promo[2], row_promo[7], first_date+d,
+     #                         row_promo[9], row_promo[10], row_promo[11],
+     #                         row_promo[14], row_promo[9], int(row_promo[1])]
         cont+=1
-    df_promo.loc[cont]=[row_promo["COD ENSEÑA"] , row_promo[" CODFamilia apo"], last_date+timedelta(days=days_after),
-                        row_promo["Animacion 1"],row_promo["Animacion 2"],row_promo["Animacion 3"],
-                        row_promo["TEMATICA"],row_promo["Abreviatura accion"], int(row_promo["CODIGO CLIENTE"])]
+    data_matrix.append([row_promo[2] , row_promo[7], last_date+timedelta(days=days_after),
+                        row_promo[9], row_promo[10], row_promo[11],
+                        row_promo[14], row_promo[9], int(row_promo[1])])
+    #df_promo.loc[cont]=[row_promo[2] , row_promo[7], last_date+timedelta(days=days_after),
+    #                    row_promo[9], row_promo[10], row_promo[11],
+    #                    row_promo[14], row_promo[9], int(row_promo[1])]
     cont+=1
     print(cont)
     #print(df_promo)
+df_promo = pd.DataFrame(data_matrix)
+df_promo.columns = ["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion", "CDATA"]
 
 print(df_promo)
 
@@ -144,7 +156,8 @@ station_file = "C:\\Users\\tr5568\\Desktop\\DAYANA\\CAPSA\\Tabla_estacionalidad 
 station = pd.read_excel(station_file, 1)
 for ent in entries:
     #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
-    if ent[1]=="Z5E99K" and ent[3]!="111":
+    #if ent[1]=="Z5E99K" and ent[3]!="111":
+    if ent[3]!="111":
     #if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062":
         print("VALOR DE SFAPO: ")
         print(str(ent[3]))
@@ -224,7 +237,9 @@ for ent in entries:
             # key = col_name
             if str(row[3])=='': FAMAPO=0
             else: FAMAPO=int(row[3])
-            dict1.update({"MAT":row[0], "ENS":row[1], "CDATA":int(row[2]), "FAMAPO":FAMAPO, "CANT":float(row[5]), "KL":float(row[6]), "IMP":float(row[7]), "DATE":myDate})
+            if str(row[2])=='':CDATA=0
+            else: CDATA=int(row[2])
+            dict1.update({"MAT":row[0], "ENS":row[1], "CDATA":CDATA, "FAMAPO":FAMAPO, "CANT":float(row[5]), "KL":float(row[6]), "IMP":float(row[7]), "DATE":myDate})
             #print(dict1)
 
 
@@ -347,13 +362,15 @@ for ent in entries:
             #Replace 0 for median of BASELINE vector (without 0 values)
             median=float(np.median(BASELINE[BASELINE>0]))
             BASELINE[BASELINE==0]=median
+            #print(BASELINE)
+            #print(len(BASELINE))
 
             #insert promo columns in dataframe using join
             total = total.join(
                 df_promo.set_index(['FAMAPO', 'DATE', 'ENS','CDATA']),
                 on=['FAMAPO', 'DATE', 'ENS','CDATA'])
-            print("ANIMACIÓN 1")
-            print(total["Animacion 1"])
+            #print("ANIMACIÓN 1")
+            #print(total["Animacion 1"])
 
             total.replace({'Animacion 1': {None: 0}}, inplace=True)
             total.replace({'Animacion 2': {None: 0}}, inplace=True)
@@ -366,19 +383,30 @@ for ent in entries:
 
             print("STATUS PROMO")
             print(total["STATUS_PROMO"])
+            #reset_index
+            total=total.reset_index(drop=True)
+
             #we want to replace values of baseline in promo days for average of KL_DETREND in days without promo
             average_KL_DETREND_nopromo=0
             aux=0
+            average_KL_DETREND=0
 
             for i, x in enumerate(total["STATUS_PROMO"]):
+                average_KL_DETREND += total.loc[i, "KL_DETREND"]
+                #KL_DETREND column number=10
                 if x!="P":
                     average_KL_DETREND_nopromo+=total.loc[i,"KL_DETREND"]
-                    aux+=1
+                    aux += 1
 
+
+            #print("AVERAGE")
+            #print(average_KL_DETREND_nopromo)
             if aux!=0:
                 average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
+                average_KL_DETREND=average_KL_DETREND/aux
                 for i,x in enumerate(total["STATUS_PROMO"]):
                     if x=="P": BASELINE[i]=average_KL_DETREND_nopromo
+
             #print("AVERAGE KL_DETREND no promo")
             #print(average_KL_DETREND_nopromo)
 
@@ -408,13 +436,17 @@ for ent in entries:
             # print("BASELINE DESPUÉS DE SAV")
             #print(BASELINE)
             #print(len(BASELINE))
+            treshold = float(0.25 * average_KL_DETREND)
+            for i, x in enumerate(total["KL_DETREND"]):
+                if x<=treshold:
+                    BASELINE[i]=0
 
             #print("TAM DE TOTAL")
             #print(len(total))
             #Add BASELINE column to our dataframe
             total["BASELINE"]=BASELINE
             #in days with low values of KL_DETREND we have to replace BASELINE value (BASELINE=KL_DETREND)
-            total["BASELINE"]=total.apply(replace,axis=1)
+            #total["BASELINE"]=total.apply(replace,axis=1)
             #Add incremental KL_DETREND column to our dataframe
             total["VENTA_INCREMENTAL"] = total.loc[:, "KL_DETREND"] - total.loc[:, "BASELINE"]
             #Add VENTA_PROMO to our dataframe
@@ -474,17 +506,24 @@ for df in data_canib:
 
 print("DICCIONARIO PROMOS")
 print(dict_promo)
+vector=[]
 
 #if we have a product without with the same "Grupo canibalizacion" and "DATE" of other in promo
 #we have to change "STATUS_PROMO" vector and we put a 'C' instead of "0"
 
-for i, row in enumerate(df_total.values):
-    #row_data=df_total.iloc[i,:]
-    key=str(row["Grupo canibalizacion"])+"_"+str(row["DATE"])
+matriz_aux=df_total.values
+for i, x in enumerate(matriz_aux):
+    #row=df_total.iloc[i,:]
+    key = str(x[22]) + "_" + str(x[2])
+    #key=str(row["Grupo canibalizacion"])+"_"+str(row["DATE"])
     if key in dict_promo:
         if dict_promo[key]=="P":
-            df_total[i,"STATUS_PROMO"]="C"
-            print("CAMBIANDO EL VALOR A C")
+            #df_total[i,"STATUS_PROMO"]="C"
+            #vector.append("C")
+            if x[17]!="P":
+                matriz_aux[i,17]="C"
+                print(i)
+                print("CAMBIANDO EL VALOR A C")
 
         #aux_df=df_total[(df_total["Grupo canibalizacion"]==row["Grupo canibalizacion"]) & (df_total["DATE"]==row["DATE"])]
         #print("DATAFRAME AUX")
@@ -536,4 +575,10 @@ for i, row in enumerate(df_total.values):
 #print("DF CON CANIBALIZACIÓN")
 #print(df_total)
 # we write data in a csv file
-df_total.to_csv("data_final.csv", sep=',')
+df_total2=pd.DataFrame(matriz_aux, columns=["CANT", "CDATA", "DATE", "ENS", "FAMAPO", "IMP","KL", "MAT", "WEEK","TREND",
+                                            "KL_DETREND","EUROS_DETREND","Animacion 1", "Animacion 2", "Animacion 3",
+                                            "TEMATICA", "Abreviatura accion","STATUS_PROMO", "BASELINE", "VENTA_INCREMENTAL",
+                                            "VENTA_PROMO", "EUROS_PROMO", "Grupo canibalizacion"])
+df_total2.to_csv("data_final_total.csv", sep=',')
+
+
