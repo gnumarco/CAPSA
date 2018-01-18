@@ -106,7 +106,7 @@ promo=promo.reset_index(drop=True)
 print(len(promo))
 print(promo)
 
-df_promo=pd.DataFrame(columns=["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion", "CDATA"])
+df_promo=pd.DataFrame(columns=["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion", "CDATA", "Codigo unico"])
 data_matrix = []
 
 cont=0
@@ -114,13 +114,13 @@ days_before=0
 days_after=0
 for row_promo in promo.values:
     #print(row_promo["Animacion 1"])
-    print(row_promo)
+    print(row_promo[0])
     last_date=row_promo[4]+timedelta(days=days_after)
     first_date=row_promo[3]-timedelta(days=days_before)
     diff=last_date-(first_date-timedelta(days=days_before))
     data_matrix.append([row_promo[2], row_promo[7], first_date,
                         row_promo[9],row_promo[10],row_promo[11],
-                        row_promo[14],row_promo[9], int(row_promo[1])])
+                        row_promo[14],row_promo[9], int(row_promo[1]), row_promo[0]])
     #df_promo.values[cont]=[row_promo[2], row_promo[7], first_date,
     #                    row_promo[9],row_promo[10],row_promo[11],
     #                    row_promo[14],row_promo[9], int(row_promo[1])]
@@ -132,14 +132,14 @@ for row_promo in promo.values:
         d=timedelta(days=j)
         data_matrix.append([row_promo[2], row_promo[7], first_date+d,
                               row_promo[9], row_promo[10], row_promo[11],
-                              row_promo[14], row_promo[9], int(row_promo[1])])
+                              row_promo[14], row_promo[9], int(row_promo[1]), row_promo[0]])
      #   df_promo.loc[cont] = [row_promo[2], row_promo[7], first_date+d,
      #                         row_promo[9], row_promo[10], row_promo[11],
      #                         row_promo[14], row_promo[9], int(row_promo[1])]
         cont+=1
     data_matrix.append([row_promo[2] , row_promo[7], last_date+timedelta(days=days_after),
                         row_promo[9], row_promo[10], row_promo[11],
-                        row_promo[14], row_promo[9], int(row_promo[1])])
+                        row_promo[14], row_promo[9], int(row_promo[1]), row_promo[0]])
     #df_promo.loc[cont]=[row_promo[2] , row_promo[7], last_date+timedelta(days=days_after),
     #                    row_promo[9], row_promo[10], row_promo[11],
     #                    row_promo[14], row_promo[9], int(row_promo[1])]
@@ -147,7 +147,7 @@ for row_promo in promo.values:
     print(cont)
     #print(df_promo)
 df_promo = pd.DataFrame(data_matrix)
-df_promo.columns = ["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion", "CDATA"]
+df_promo.columns = ["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion", "CDATA", "Codigo unico"]
 
 print(df_promo)
 
@@ -439,7 +439,7 @@ for ent in entries:
             treshold = float(0.25 * average_KL_DETREND)
             for i, x in enumerate(total["KL_DETREND"]):
                 if x<=treshold:
-                    BASELINE[i]=0
+                    BASELINE[i]=x
 
             #print("TAM DE TOTAL")
             #print(len(total))
@@ -514,14 +514,15 @@ vector=[]
 matriz_aux=df_total.values
 for i, x in enumerate(matriz_aux):
     #row=df_total.iloc[i,:]
-    key = str(x[22]) + "_" + str(x[2])
+    key = str(x[23]) + "_" + str(x[2])
     #key=str(row["Grupo canibalizacion"])+"_"+str(row["DATE"])
+    if x[18]!="P":  matriz_aux[i,20]=0  # if no promo, venta_incremental=0
     if key in dict_promo:
         if dict_promo[key]=="P":
             #df_total[i,"STATUS_PROMO"]="C"
             #vector.append("C")
-            if x[17]!="P":
-                matriz_aux[i,17]="C"
+            if x[18]!="P":
+                matriz_aux[i,18]="C"
                 print(i)
                 print("CAMBIANDO EL VALOR A C")
 
@@ -577,7 +578,7 @@ for i, x in enumerate(matriz_aux):
 # we write data in a csv file
 df_total2=pd.DataFrame(matriz_aux, columns=["CANT", "CDATA", "DATE", "ENS", "FAMAPO", "IMP","KL", "MAT", "WEEK","TREND",
                                             "KL_DETREND","EUROS_DETREND","Animacion 1", "Animacion 2", "Animacion 3",
-                                            "TEMATICA", "Abreviatura accion","STATUS_PROMO", "BASELINE", "VENTA_INCREMENTAL",
+                                            "TEMATICA", "Abreviatura accion","Codigo unico","STATUS_PROMO", "BASELINE", "VENTA_INCREMENTAL",
                                             "VENTA_PROMO", "EUROS_PROMO", "Grupo canibalizacion"])
 df_total2.to_csv("data_final_total.csv", sep=',')
 
