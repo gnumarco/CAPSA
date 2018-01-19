@@ -8,6 +8,12 @@ import matplotlib.pyplot as plt
 from datetime import timedelta
 import csv
 
+# mode = 1 Eroski
+# mode = 2 ECI
+mode = 2
+user = "M"
+
+
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     try:
         window_size = np.abs(np.int(window_size))
@@ -79,8 +85,13 @@ cursor = cnxn.cursor()
 entries = []
 
 # Gets all the combinations "Material"+"Enseña"+"Central Data"+"Familia APO"
-cursor.execute(
-    'SELECT DISTINCT "_BIC_ZMATERIAL","_BIC_ZENSENA2","_BIC_ZCDATA","_BIC_ZFAMAPO"  FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPTF1"')
+
+if mode == 1:
+    cursor.execute(
+        'SELECT DISTINCT "_BIC_ZMATERIAL","_BIC_ZENSENA2","_BIC_ZCDATA","_BIC_ZFAMAPO"  FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPTF1"')
+elif mode == 2:
+    cursor.execute(
+        'SELECT DISTINCT "_BIC_ZMATERIAL","_BIC_ZENSENA","_BIC_ZCDATA","_BIC_ZFAMAPO"  FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPT01"')
 
 # Store all the combinations into the list
 for row in cursor.fetchall():
@@ -98,8 +109,17 @@ cpt = 0
 df_total=None
 
 # We read promotion file and make a new dataframe to use the function "join" in order to calculate promos
-promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1710_II.xlsx"
+if user == "D" and mode == 1:
+    promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1710_II.xlsx"
+elif user == "M" and mode == 1:
+    promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1710_II.XLSX"
+elif user == "D" and mode == 2:
+    promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
+elif user == "M" and mode == 2:
+    promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 promo = pd.read_excel(promo_file)
+print(promo)
+print(len(promo))
 #print(promo.duplicated())
 promo=promo.drop_duplicates(subset=["COD ENSEÑA", "CODIGO CLIENTE", "Fecha inicio folleto","Fecha fin folleto"," CODFamilia apo"])
 promo=promo.reset_index(drop=True)
@@ -152,7 +172,10 @@ df_promo.columns = ["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animaci
 print(df_promo)
 
 # We read the seasonality file
-station_file = "C:\\Users\\tr5568\\Desktop\\DAYANA\\CAPSA\\Tabla_estacionalidad fichero carga.xlsx"
+if user == "D":
+    station_file = "C:\\Users\\tr5568\\Desktop\\DAYANA\\CAPSA\\Tabla_estacionalidad fichero carga.xlsx"
+elif user == "M":
+    station_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\Tabla_estacionalidad fichero carga.xlsx"
 station = pd.read_excel(station_file, 1)
 for ent in entries:
     #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
@@ -163,19 +186,33 @@ for ent in entries:
         print(str(ent[3]))
         if(str(ent[3])==''): SFAPO=0
         else: SFAPO = int(ent[3])
-
-        #### This query has to be adapted for each "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
-        ## This part of the query stays fixed
-        #query = 'SELECT "_BIC_ZMATERIAL","_BIC_ZENSENA2","_BIC_ZDESMER70","_BIC_ZFAMAPO","ZFECHA",sum("_BIC_ZCANTOT") AS "_BIC_ZCANTOT",sum("_BIC_ZKL") AS "_BIC_ZKL",sum("_BIC_ZIMPTOT2") AS "_BIC_ZIMPTOT2" FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPTF1" WHERE '
-        query = 'SELECT "_BIC_ZMATERIAL","_BIC_ZENSENA2","_BIC_ZCDATA","_BIC_ZFAMAPO","ZFECHA",sum("_BIC_ZCANTOT") AS "_BIC_ZCANTOT",sum("_BIC_ZKL") AS "_BIC_ZKL",sum("_BIC_ZIMPTOT2") AS "_BIC_ZIMPTOT2" FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPTF1" WHERE '
-        query = query + '"ZFECHA" >= 20170101 AND "_BIC_ZENSENA2" NOT IN (\'Z5E005\',\'Z5E008\',\'Z5E013\',\'Z5E018\') AND '
-        ## Here goes the adaptation: replace the hard coded values with the variable of the "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
-        ## These values are hard coded to test
-        query = query + '"_BIC_ZENSENA2" = \''+ent[1]+'\' AND "_BIC_ZFAMAPO"=\''+ent[3]+'\' AND "_BIC_ZMATERIAL"=\''+ent[0]+'\' AND "_BIC_ZCDATA"=\''+ent[2]+'\' '
-        ## This part of the query stays fixed
-        #query = query + 'GROUP BY "_BIC_ZMATERIAL","_BIC_ZFAMAPO","_BIC_ZENSENA2","_BIC_ZDESMER70","ZFECHA" '
-        query = query + 'GROUP BY "_BIC_ZMATERIAL","_BIC_ZFAMAPO","_BIC_ZENSENA2","_BIC_ZCDATA","ZFECHA" '
-        query = query + 'ORDER BY "ZFECHA"'
+        if mode == 1:
+            #### This query has to be adapted for each "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
+            ## This part of the query stays fixed
+            #query = 'SELECT "_BIC_ZMATERIAL","_BIC_ZENSENA2","_BIC_ZDESMER70","_BIC_ZFAMAPO","ZFECHA",sum("_BIC_ZCANTOT") AS "_BIC_ZCANTOT",sum("_BIC_ZKL") AS "_BIC_ZKL",sum("_BIC_ZIMPTOT2") AS "_BIC_ZIMPTOT2" FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPTF1" WHERE '
+            query = 'SELECT "_BIC_ZMATERIAL","_BIC_ZENSENA2","_BIC_ZCDATA","_BIC_ZFAMAPO","ZFECHA",sum("_BIC_ZCANTOT") AS "_BIC_ZCANTOT",sum("_BIC_ZKL") AS "_BIC_ZKL",sum("_BIC_ZIMPTOT2") AS "_BIC_ZIMPTOT2" FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPTF1" WHERE '
+            query = query + '"ZFECHA" >= 20170101 AND "_BIC_ZENSENA2" NOT IN (\'Z5E005\',\'Z5E008\',\'Z5E013\',\'Z5E018\') AND '
+            ## Here goes the adaptation: replace the hard coded values with the variable of the "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
+            ## These values are hard coded to test
+            query = query + '"_BIC_ZENSENA2" = \''+ent[1]+'\' AND "_BIC_ZFAMAPO"=\''+ent[3]+'\' AND "_BIC_ZMATERIAL"=\''+ent[0]+'\' AND "_BIC_ZCDATA"=\''+ent[2]+'\' '
+            ## This part of the query stays fixed
+            #query = query + 'GROUP BY "_BIC_ZMATERIAL","_BIC_ZFAMAPO","_BIC_ZENSENA2","_BIC_ZDESMER70","ZFECHA" '
+            query = query + 'GROUP BY "_BIC_ZMATERIAL","_BIC_ZFAMAPO","_BIC_ZENSENA2","_BIC_ZCDATA","ZFECHA" '
+            query = query + 'ORDER BY "ZFECHA"'
+        elif mode == 2:
+            #### This query has to be adapted for each "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
+            ## This part of the query stays fixed
+            # query = 'SELECT "_BIC_ZMATERIAL","_BIC_ZENSENA2","_BIC_ZDESMER70","_BIC_ZFAMAPO","ZFECHA",sum("_BIC_ZCANTOT") AS "_BIC_ZCANTOT",sum("_BIC_ZKL") AS "_BIC_ZKL",sum("_BIC_ZIMPTOT2") AS "_BIC_ZIMPTOT2" FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPTF1" WHERE '
+            query = 'SELECT "_BIC_ZMATERIAL","_BIC_ZENSENA" AS "_BIC_ZENSENA2","_BIC_ZCDATA","_BIC_ZFAMAPO","DATE_SAP_2" AS ZFECHA,sum("_BIC_ZCANTOT") AS "_BIC_ZCANTOT",sum("_BIC_ZKL") AS "_BIC_ZKL", sum("_BIC_ZIMPTOT2") AS "_BIC_ZIMPTOT2" FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPT01" WHERE '
+            query = query + '"DATE_SAP_2" >= 20170101 AND "_BIC_ZENSENA" NOT IN (\'Z5E005\',\'Z5E008\',\'Z5E013\',\'Z5E018\') AND '
+            ## Here goes the adaptation: replace the hard coded values with the variable of the "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
+            ## These values are hard coded to test
+            query = query + '"_BIC_ZENSENA" = \'' + ent[1] + '\' AND "_BIC_ZFAMAPO"=\'' + ent[
+                3] + '\' AND "_BIC_ZMATERIAL"=\'' + ent[0] + '\' AND "_BIC_ZCDATA"=\'' + ent[2] + '\' '
+            ## This part of the query stays fixed
+            # query = query + 'GROUP BY "_BIC_ZMATERIAL","_BIC_ZFAMAPO","_BIC_ZENSENA2","_BIC_ZDESMER70","ZFECHA" '
+            query = query + 'GROUP BY "_BIC_ZMATERIAL","_BIC_ZFAMAPO","_BIC_ZENSENA","_BIC_ZCDATA","DATE_SAP_2" '
+            query = query + 'ORDER BY "DATE_SAP_2"'
 
         print("SQL Query: "+query)
 
