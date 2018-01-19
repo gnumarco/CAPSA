@@ -513,7 +513,10 @@ for ent in entries:
 #print(df_total)
 
 #We read canib file
-canib_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Canib.xlsx"
+if user == "D":
+    canib_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Canib.xlsx"
+elif user == "M":
+    canib_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\Canib.xlsx"
 canib_excel = pd.read_excel(canib_file)
 df_total = df_total.join(canib_excel.set_index('Cod. Familia'), on='FAMAPO')
 #print(df_total)
@@ -613,10 +616,12 @@ for i, x in enumerate(matriz_aux):
 #print("DF CON CANIBALIZACIÓN")
 #print(df_total)
 # we write data in a csv file
+print("Writing final CSV file")
 df_total2=pd.DataFrame(matriz_aux, columns=["CANT", "CDATA", "DATE", "ENS", "FAMAPO", "IMP","KL", "MAT", "WEEK","TREND",
                                             "KL_DETREND","EUROS_DETREND","Animacion 1", "Animacion 2", "Animacion 3",
                                             "TEMATICA", "Abreviatura accion","Codigo unico","STATUS_PROMO", "BASELINE", "VENTA_INCREMENTAL",
                                             "VENTA_PROMO", "EUROS_PROMO", "Grupo canibalizacion"])
 df_total2.to_csv("data_final_total.csv", sep=',')
+print("Finished writing file")
 
 
