@@ -10,7 +10,7 @@ import csv
 
 # mode = 1 Eroski
 # mode = 2 ECI
-mode = 2
+mode = 1
 user = "M"
 
 
@@ -182,7 +182,7 @@ station = pd.read_excel(station_file, 1)
 for ent in entries:
     #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
     #if ent[1]=="Z5E99K" and ent[3]!="111":
-    #if ent[3]!="111":
+    if ent[3]=="122":
     #if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062": 
         print("VALOR DE SFAPO: ")
         print(str(ent[3]))
