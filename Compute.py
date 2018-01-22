@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 from datetime import timedelta
 import csv
 
-# mode = 1 Eroski
-# mode = 2 ECI
-mode = 3
+mode = 1 #Eroski
+# mode = 2 #ECI
+#mode = 3
 user = "D"
 
 
@@ -192,7 +192,7 @@ station = pd.read_excel(station_file, 1)
 for ent in entries:
     #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
     #if ent[1]=="Z5E99K" and ent[3]!="111":
-    #if ent[3]!="111":
+    if ent[3]=="122" and ent[1]=="Z5E99K":
     #if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062": 
         print("VALOR DE SFAPO: ")
         print(str(ent[3]))
@@ -439,6 +439,7 @@ for ent in entries:
             total.replace({'Animacion 3': {None: 0}}, inplace=True)
             total.replace({'TEMATICA': {None: 0}}, inplace=True)
             total.replace({'Abreviatura accion': {None: 0}}, inplace=True)
+            total.replace({'Codigo unico': {None: 0}}, inplace=True)
 
             #we calculate a new row called STATUS PROMO ("P" if there is promo)
             total["STATUS_PROMO"]=total.apply(ispromo,axis=1)
@@ -450,31 +451,30 @@ for ent in entries:
 
             #we want to replace values of baseline in promo days for average of KL_DETREND in days without promo
             average_KL_DETREND_nopromo=0
-            aux=0
-            average_KL_DETREND=0
+            average_KL_DETREND=float(np.median(total.loc[:,"KL_DETREND"]))
 
-            for i, x in enumerate(total["STATUS_PROMO"]):
-                average_KL_DETREND += total.loc[i, "KL_DETREND"]
-                #KL_DETREND column number=10
-                if x!="P":
-                    average_KL_DETREND_nopromo+=total.loc[i,"KL_DETREND"]
-                    aux += 1
+
+             #   #KL_DETREND column number=10
+             #   if x!="P":
+             #       average_KL_DETREND_nopromo+=total.loc[i,"KL_DETREND"]
+             #       aux += 1
 
 
             #print("AVERAGE")
             #print(average_KL_DETREND_nopromo)
-            if aux!=0:
-                average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
-                average_KL_DETREND=average_KL_DETREND/aux
-                for i,x in enumerate(total["STATUS_PROMO"]):
-                    if x=="P": BASELINE[i]=average_KL_DETREND_nopromo
 
-            #print("AVERAGE KL_DETREND no promo")
-            #print(average_KL_DETREND_nopromo)
+            for i,x in enumerate(total.values):
+                total_aux=total[(total["DATE"]<=(x[2]+timedelta(days=30))) & (total["DATE"]>=(x[2]-timedelta(days=30)))].reset_index(drop=True)
+                #print("total_aux")
+                #print(total_aux)
+                aux=0
+                for j in range(0, len(total_aux)):
+                    if total_aux.loc[j,"STATUS_PROMO"] != "P" and total_aux.loc[j,"KL_DETREND"]!=0:
+                        average_KL_DETREND_nopromo += total_aux.loc[j, "KL_DETREND"]
+                        aux += 1
+                if aux!=0: average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
+                if x[18]=="P": BASELINE[i]=average_KL_DETREND_nopromo
 
-            #average_KL_DETREND_nopromo=float(np.median(total["KL_DETREND"][total["KL_DETREND"]!="P"]))
-            #print("AVERAGE METODO 2")
-            #print(average_KL_DETREND_nopromo)
 
 
 
@@ -559,11 +559,15 @@ for df in data_canib:
     print(df[0])
     print("df[1]")
     print(df[1])
+    codigo_unico=[]
     if df[0]!=-1:
         if "P" in df[1].reset_index(drop=True).loc[:,"STATUS_PROMO"].values:
-            dict_promo[str(df[1].reset_index(drop=True).loc[0,"Grupo canibalizacion"])+"_"+str(
-                df[1].reset_index(drop=True).loc[0,"DATE"])]="P"
-            print("RELLENANDO CON P")
+            datafr=df[1].reset_index(drop=True).loc[:,"Codigo unico"]
+            codigo_unico=datafr[datafr!=0].reset_index(drop=True)
+            #print("CODIGO UNICO")
+            #print(codigo_unico)
+            dict_promo[str(df[1].reset_index(drop=True).loc[0,"Grupo canibalizacion"])+"_"+str(df[1].reset_index(drop=True).loc[0,"DATE"])]=codigo_unico[0]
+            print("RELLENANDO CON CÓDIGO ÚNICO DE PROMO")
         else:
             dict_promo[str(df[1].reset_index(drop=True).loc[0, "Grupo canibalizacion"]) + "_" + str(
                 df[1].reset_index(drop=True).loc[0, "DATE"])] = 0
@@ -583,11 +587,13 @@ for i, x in enumerate(matriz_aux):
     #key=str(row["Grupo canibalizacion"])+"_"+str(row["DATE"])
     if x[18]!="P":  matriz_aux[i,20]=0  # if no promo, venta_incremental=0
     if key in dict_promo:
-        if dict_promo[key]=="P":
+        if dict_promo[key]!=0:
             #df_total[i,"STATUS_PROMO"]="C"
             #vector.append("C")
             if x[18]!="P":
                 matriz_aux[i,18]="C"
+                matriz_aux[i,17]=dict_promo[key]
+                print("CODIGO PROMO",dict_promo[key])
                 print(i)
                 print("CAMBIANDO EL VALOR A C")
 
