@@ -11,7 +11,7 @@ import csv
 mode = 1 #Eroski
 # mode = 2 #ECI
 #mode = 3
-user = "D"
+user = "M"
 
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
@@ -192,7 +192,7 @@ station = pd.read_excel(station_file, 1)
 for ent in entries:
     #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
     #if ent[1]=="Z5E99K" and ent[3]!="111":
-    if ent[3]=="122" and ent[1]=="Z5E99K":
+    if ent[3]=="122" and ent[1]=="Z5E99K" and ent[0]=="000000000000011467" and ent[2]=="0000121062":
     #if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062": 
         print("VALOR DE SFAPO: ")
         print(str(ent[3]))
@@ -368,64 +368,7 @@ for ent in entries:
             #    total.to_csv("Dayana.csv", mode='a', header=False, sep=",", index=False)
 
 
-            #BASELINE calculation
-            BASELINE=np.array(total.loc[:,"KL_DETREND"])
 
-            #using windows
-            if len(BASELINE) >= 7:
-
-                for i, x in enumerate(BASELINE):
-                    if i >= 3 and i < len(BASELINE) - 3:
-                        average = 0
-                        vector = []
-                        vector.append(BASELINE[i])
-                        for j in range(1, 4):
-                            vector.append(BASELINE[i - 1])
-                            vector.append(BASELINE[i + 1])
-                        for j, y in enumerate(vector):
-                            average += y
-                        average = average / len(vector)
-                        var = stats.stdev(vector, average)
-                        #vector_average.append(average)
-                        #vector_var.append(var)
-                        if abs(BASELINE[i]) > average + var or abs(BASELINE[i]) < average - var:
-                            BASELINE[i] = average
-                    else:
-                        if i in [0, 1, 2]:
-                            vector = []
-                            average = 0
-                            for b in range(0, 7):
-                                vector.append(BASELINE[i])
-                            for b, x in enumerate(vector):
-                                average += x
-                            average = average / len(vector)
-                            var = stats.stdev(vector, average)
-                            #vector_average.append(average)
-                            #vector_var.append(var)
-                            if abs(BASELINE[i]) > average + float(var/2) or abs(BASELINE[i]) < average - var:
-                                BASELINE[i] = average
-
-                        if i in [len(BASELINE) - 1, len(BASELINE) - 2, len(BASELINE) - 3]:
-                            vector = []
-                            average = 0
-                            for b in range(1, 8):
-                                vector.append(BASELINE[len(BASELINE) - b])
-                            for j, y in enumerate(vector):
-                                average += y
-                            average = average / len(vector)
-                            var = stats.stdev(vector, average)
-                            #vector_average.append(average)
-                            #vector_var.append(var)
-                            if abs(BASELINE[i]) > average + float(var/2) or abs(BASELINE[i]) < average - var:
-                                BASELINE[i] = average
-
-
-            #plt.plot(BASELINE)
-            #Replace 0 for median of BASELINE vector (without 0 values)
-            median=float(np.median(BASELINE[BASELINE>0]))
-            BASELINE[BASELINE==0]=median
-            #print(BASELINE)
-            #print(len(BASELINE))
 
             #insert promo columns in dataframe using join
             total = total.join(
@@ -449,10 +392,85 @@ for ent in entries:
             #reset_index
             total=total.reset_index(drop=True)
 
+
+
+
+
+            # BASELINE calculation
+            BASELINE = np.array(total.loc[:, "KL_DETREND"])
+
+            # using windows
+            if len(BASELINE) >= 9:
+
+                for i, x in enumerate(BASELINE):
+                    if i >= 3 and i < len(BASELINE) - 3:
+                        average = 0
+                        vector = []
+                        vector.append(BASELINE[i])
+                        for j in range(1, 4):
+                            vector.append(BASELINE[i - j])
+                            vector.append(BASELINE[i + j])
+                        for j, y in enumerate(vector):
+                            average += y
+                        average = average / len(vector)
+                        var = average * 0.1
+                        #var = stats.stdev(vector, average)
+                        #print("Average")
+                        #print(average)
+                        #print("Variance")
+                        #print(var)
+                        # vector_average.append(average)
+                        # vector_var.append(var)
+                        if abs(BASELINE[i]) > average + float(var / 2) or abs(BASELINE[i]) < average - float(var):
+                            BASELINE[i] = average
+                    else:
+                        if i in [0, 1, 2]:
+                            vector = []
+                            average = 0
+                            for b in range(0, 7):
+                                vector.append(BASELINE[i])
+                            for b, x in enumerate(vector):
+                                average += x
+                            average = average / len(vector)
+                            var = average * 0.1
+                            #var = stats.stdev(vector, average)
+                            # vector_average.append(average)
+                            # vector_var.append(var)
+                            if abs(BASELINE[i]) > average + float(var / 2) or abs(BASELINE[i]) < average - var:
+                                BASELINE[i] = average
+
+                        if i in [len(BASELINE) - 1, len(BASELINE) - 2, len(BASELINE) - 3]:
+                            vector = []
+                            average = 0
+                            for b in range(1, 8):
+                                vector.append(BASELINE[len(BASELINE) - b])
+                            for j, y in enumerate(vector):
+                                average += y
+                            average = average / len(vector)
+                            var = average * 0.1
+                            #var = stats.stdev(vector, average)
+                            # vector_average.append(average)
+                            # vector_var.append(var)
+                            if abs(BASELINE[i]) > average + float(var / 2) or abs(BASELINE[i]) < average - var:
+                                BASELINE[i] = average
+
+            # plt.plot(BASELINE)
+            # Replace 0 for median of BASELINE vector (without 0 values)
+            median = float(np.median(BASELINE[BASELINE > 0]))
+            BASELINE[BASELINE == 0] = median
+
+            # print(BASELINE)
+            # print(len(BASELINE))
+
+
+
+
+
             #we want to replace values of baseline in promo days for average of KL_DETREND in days without promo
             average_KL_DETREND_nopromo=0
             average_KL_DETREND=float(np.median(total.loc[:,"KL_DETREND"]))
-
+            print("AV KL_DETREND")
+            print(average_KL_DETREND)
 
              #   #KL_DETREND column number=10
              #   if x!="P":
@@ -462,18 +480,26 @@ for ent in entries:
 
             #print("AVERAGE")
             #print(average_KL_DETREND_nopromo)
-
+            #plt.plot(BASELINE)
+            #plt.plot(total.loc[:,"KL_DETREND"])
+            #plt.ylabel('some numbers')
+            #plt.show()
+            total["BASELINE"] = BASELINE
             for i,x in enumerate(total.values):
-                total_aux=total[(total["DATE"]<=(x[2]+timedelta(days=30))) & (total["DATE"]>=(x[2]-timedelta(days=30)))].reset_index(drop=True)
-                #print("total_aux")
-                #print(total_aux)
-                aux=0
-                for j in range(0, len(total_aux)):
-                    if total_aux.loc[j,"STATUS_PROMO"] != "P" and total_aux.loc[j,"KL_DETREND"]!=0:
-                        average_KL_DETREND_nopromo += total_aux.loc[j, "KL_DETREND"]
-                        aux += 1
-                if aux!=0: average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
-                if x[18]=="P": BASELINE[i]=average_KL_DETREND_nopromo
+                 total_aux=total[(total["DATE"]<=(x[2]+timedelta(days=40))) & (total["DATE"]>=(x[2]-timedelta(days=40))) ].reset_index(drop=True)
+            #     print(str(x[2]))
+            #     print("LEN total_aux")
+            #     print(len(total_aux))
+                 aux=0
+                 for j in range(0, len(total_aux)):
+                     if total_aux.loc[j,"STATUS_PROMO"] != "P" and total_aux.loc[j,"KL_DETREND"]!=0:
+                         average_KL_DETREND_nopromo += total_aux.loc[j, "BASELINE"]
+                         aux += 1
+                 if aux!=0: average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
+            #    if x[18]=="P": BASELINE[i]=average_KL_DETREND
+                 if x[18]=="P": BASELINE[i]=average_KL_DETREND_nopromo
+            #     print("Baseline")
+            #     print(average_KL_DETREND_nopromo)
 
 
 
@@ -485,14 +511,14 @@ for ent in entries:
             #print(BASELINE)
             #print(len(BASELINE))
             #Savitzky
-            ventana=51
+            ventana=11
             if(len(BASELINE)>30):
                 if len(BASELINE)<ventana:
                     if len(BASELINE)%2!=1:
                         ventana=len(BASELINE)-1
                     else:
                         ventana=len(BASELINE)
-                BASELINE= savitzky_golay(BASELINE, ventana, 2)  # window size 51, polynomial order 3
+                #BASELINE= savitzky_golay(BASELINE, ventana, 1)  # window size 51, polynomial order 3
 
 
             # print("BASELINE DESPUÉS DE SAV")
@@ -501,7 +527,8 @@ for ent in entries:
             treshold = float(0.25 * average_KL_DETREND)
             for i, x in enumerate(total["KL_DETREND"]):
                 if x<=treshold:
-                    BASELINE[i]=x
+                    #BASELINE[i]=x
+                    print()
 
             #print("TAM DE TOTAL")
             #print(len(total))
@@ -652,7 +679,7 @@ df_total2=pd.DataFrame(matriz_aux, columns=["CANT", "CDATA", "DATE", "ENS", "FAM
                                             "KL_DETREND","EUROS_DETREND","Animacion 1", "Animacion 2", "Animacion 3",
                                             "TEMATICA", "Abreviatura accion","Codigo unico","STATUS_PROMO", "BASELINE", "VENTA_INCREMENTAL",
                                             "VENTA_PROMO", "EUROS_PROMO", "Grupo canibalizacion"])
-df_total2.to_csv("data_final_total.csv", sep=';', decimal=',', float_format='%.6f')
+df_total2.to_csv("data_famapo_122.csv", sep=';', decimal=',', float_format='%.6f')
 print("Finished writing file")
 
 
