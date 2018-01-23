@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 from datetime import timedelta
 import csv
 
-# mode = 1 Eroski
-# mode = 2 ECI
-mode = 1
-user = "M"
+mode = 1 #Eroski
+# mode = 2 #ECI
+#mode = 3
+user = "D"
 
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
@@ -93,6 +93,10 @@ elif mode == 2:
     cursor.execute(
         'SELECT DISTINCT "_BIC_ZMATERIAL","_BIC_ZENSENA","_BIC_ZCDATA","_BIC_ZFAMAPO"  FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPT01"')
 
+elif mode==3:
+    cursor.execute(
+        'SELECT DISTINCT "_BIC_ZMATERIA2","_BIC_ZENSENA","_BIC_ZCDATA","_BIC_ZFAMAPO"  FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSD_DE03"')
+
 # Store all the combinations into the list
 for row in cursor.fetchall():
     entries.append(row)
@@ -117,6 +121,12 @@ elif user == "D" and mode == 2:
     promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 elif user == "M" and mode == 2:
     promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
+elif user=="D" and mode ==3:
+    promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
+elif user=="M" and mode==3:
+    promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
+
+
 promo = pd.read_excel(promo_file)
 print(promo)
 print(len(promo))
@@ -182,7 +192,7 @@ station = pd.read_excel(station_file, 1)
 for ent in entries:
     #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
     #if ent[1]=="Z5E99K" and ent[3]!="111":
-    if ent[3]=="122":
+    if ent[3]=="122" and ent[1]=="Z5E99K":
     #if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062": 
         print("VALOR DE SFAPO: ")
         print(str(ent[3]))
@@ -215,6 +225,19 @@ for ent in entries:
             # query = query + 'GROUP BY "_BIC_ZMATERIAL","_BIC_ZFAMAPO","_BIC_ZENSENA2","_BIC_ZDESMER70","ZFECHA" '
             query = query + 'GROUP BY "_BIC_ZMATERIAL","_BIC_ZFAMAPO","_BIC_ZENSENA","_BIC_ZCDATA","DATE_SAP_2" '
             query = query + 'ORDER BY "DATE_SAP_2"'
+        elif mode==3:
+            #### This query has to be adapted for each "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
+            ## This part of the query stays fixed
+            #query = 'SELECT "_BIC_ZMATERIAL","_BIC_ZENSENA2","_BIC_ZDESMER70","_BIC_ZFAMAPO","ZFECHA",sum("_BIC_ZCANTOT") AS "_BIC_ZCANTOT",sum("_BIC_ZKL") AS "_BIC_ZKL",sum("_BIC_ZIMPTOT2") AS "_BIC_ZIMPTOT2" FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPTF1" WHERE '
+            query = 'SELECT "_BIC_ZCDATA","_BIC_ZMARCA2","_BIC_ZMATERIA2","_BIC_ZSECCION2","_BIC_ZSUBSEC2", "CENTRALDATAT","MARCAT","MATERIALT","SECCIONT","SUBSECCIONT","_BIC_ZDESTMER","DESTINATARIOT1", "_BIC_ZENSENA","_BIC_ZCODPOST","DESTINATARIOT2", "CALMONTH","CALWEEK","ZMM","ZAAAA",sum("_BIC_ZCOUNTER") AS "_BIC_ZCOUNTER",sum("_BIC_ZIMPPVP") AS "_BIC_ZIMPPVP",sum("_BIC_ZUNIDFRA") AS "_BIC_ZUNIDFRA",sum("_BIC_ZVMKLESTA") as "_BIC_ZVMKLESTA" FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSD_DE03" GROUP BY "_BIC_ZCDATA","_BIC_ZMARCA2", "_BIC_ZMATERIA2","_BIC_ZSECCION2","_BIC_ZSUBSEC2","CENTRALDATAT","MARCAT","MATERIALT","SECCIONT","SUBSECCIONT","_BIC_ZDESTMER","DESTINATARIOT1", "_BIC_ZENSENA","_BIC_ZCODPOST","DESTINATARIOT2","CALMONTH","CALWEEK", "ZMM","ZAAAA"'
+            query = query + '"ZFECHA" >= 20170101 AND "_BIC_ZENSENA2" NOT IN (\'Z5E005\',\'Z5E008\',\'Z5E013\',\'Z5E018\') AND '
+            ## Here goes the adaptation: replace the hard coded values with the variable of the "Material"+"Enseña"+"Punto de Venta"+"Familia APO" combination
+            ## These values are hard coded to test
+            query = query + '"_BIC_ZENSENA2" = \''+ent[1]+'\' AND "_BIC_ZFAMAPO"=\''+ent[3]+'\' AND "_BIC_ZMATERIAL"=\''+ent[0]+'\' AND "_BIC_ZCDATA"=\''+ent[2]+'\' '
+            ## This part of the query stays fixed
+            #query = query + 'GROUP BY "_BIC_ZMATERIAL","_BIC_ZFAMAPO","_BIC_ZENSENA2","_BIC_ZDESMER70","ZFECHA" '
+            query = query + 'GROUP BY "_BIC_ZMATERIAL","_BIC_ZFAMAPO","_BIC_ZENSENA2","_BIC_ZCDATA","ZFECHA" '
+            query = query + 'ORDER BY "ZFECHA"'
 
         print("SQL Query: "+query)
 
@@ -416,6 +439,7 @@ for ent in entries:
             total.replace({'Animacion 3': {None: 0}}, inplace=True)
             total.replace({'TEMATICA': {None: 0}}, inplace=True)
             total.replace({'Abreviatura accion': {None: 0}}, inplace=True)
+            total.replace({'Codigo unico': {None: 0}}, inplace=True)
 
             #we calculate a new row called STATUS PROMO ("P" if there is promo)
             total["STATUS_PROMO"]=total.apply(ispromo,axis=1)
@@ -427,31 +451,30 @@ for ent in entries:
 
             #we want to replace values of baseline in promo days for average of KL_DETREND in days without promo
             average_KL_DETREND_nopromo=0
-            aux=0
-            average_KL_DETREND=0
+            average_KL_DETREND=float(np.median(total.loc[:,"KL_DETREND"]))
 
-            for i, x in enumerate(total["STATUS_PROMO"]):
-                average_KL_DETREND += total.loc[i, "KL_DETREND"]
-                #KL_DETREND column number=10
-                if x!="P":
-                    average_KL_DETREND_nopromo+=total.loc[i,"KL_DETREND"]
-                    aux += 1
+
+             #   #KL_DETREND column number=10
+             #   if x!="P":
+             #       average_KL_DETREND_nopromo+=total.loc[i,"KL_DETREND"]
+             #       aux += 1
 
 
             #print("AVERAGE")
             #print(average_KL_DETREND_nopromo)
-            if aux!=0:
-                average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
-                average_KL_DETREND=average_KL_DETREND/aux
-                for i,x in enumerate(total["STATUS_PROMO"]):
-                    if x=="P": BASELINE[i]=average_KL_DETREND_nopromo
 
-            #print("AVERAGE KL_DETREND no promo")
-            #print(average_KL_DETREND_nopromo)
+            for i,x in enumerate(total.values):
+                total_aux=total[(total["DATE"]<=(x[2]+timedelta(days=30))) & (total["DATE"]>=(x[2]-timedelta(days=30)))].reset_index(drop=True)
+                #print("total_aux")
+                #print(total_aux)
+                aux=0
+                for j in range(0, len(total_aux)):
+                    if total_aux.loc[j,"STATUS_PROMO"] != "P" and total_aux.loc[j,"KL_DETREND"]!=0:
+                        average_KL_DETREND_nopromo += total_aux.loc[j, "KL_DETREND"]
+                        aux += 1
+                if aux!=0: average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
+                if x[18]=="P": BASELINE[i]=average_KL_DETREND_nopromo
 
-            #average_KL_DETREND_nopromo=float(np.median(total["KL_DETREND"][total["KL_DETREND"]!="P"]))
-            #print("AVERAGE METODO 2")
-            #print(average_KL_DETREND_nopromo)
 
 
 
@@ -536,11 +559,15 @@ for df in data_canib:
     print(df[0])
     print("df[1]")
     print(df[1])
+    codigo_unico=[]
     if df[0]!=-1:
         if "P" in df[1].reset_index(drop=True).loc[:,"STATUS_PROMO"].values:
-            dict_promo[str(df[1].reset_index(drop=True).loc[0,"Grupo canibalizacion"])+"_"+str(
-                df[1].reset_index(drop=True).loc[0,"DATE"])]="P"
-            print("RELLENANDO CON P")
+            datafr=df[1].reset_index(drop=True).loc[:,"Codigo unico"]
+            codigo_unico=datafr[datafr!=0].reset_index(drop=True)
+            #print("CODIGO UNICO")
+            #print(codigo_unico)
+            dict_promo[str(df[1].reset_index(drop=True).loc[0,"Grupo canibalizacion"])+"_"+str(df[1].reset_index(drop=True).loc[0,"DATE"])]=codigo_unico[0]
+            print("RELLENANDO CON CÓDIGO ÚNICO DE PROMO")
         else:
             dict_promo[str(df[1].reset_index(drop=True).loc[0, "Grupo canibalizacion"]) + "_" + str(
                 df[1].reset_index(drop=True).loc[0, "DATE"])] = 0
@@ -560,11 +587,13 @@ for i, x in enumerate(matriz_aux):
     #key=str(row["Grupo canibalizacion"])+"_"+str(row["DATE"])
     if x[18]!="P":  matriz_aux[i,20]=0  # if no promo, venta_incremental=0
     if key in dict_promo:
-        if dict_promo[key]=="P":
+        if dict_promo[key]!=0:
             #df_total[i,"STATUS_PROMO"]="C"
             #vector.append("C")
             if x[18]!="P":
                 matriz_aux[i,18]="C"
+                matriz_aux[i,17]=dict_promo[key]
+                print("CODIGO PROMO",dict_promo[key])
                 print(i)
                 print("CAMBIANDO EL VALOR A C")
 
