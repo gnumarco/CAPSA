@@ -6,12 +6,13 @@ from math import factorial
 import statistics as stats
 import matplotlib.pyplot as plt
 from datetime import timedelta
+#from scipy import sparse, spsolve
 import csv
 
 mode = 1 #Eroski
 # mode = 2 #ECI
 #mode = 3
-user = "M"
+user = "D"
 
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
@@ -35,6 +36,37 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
     y = np.concatenate((firstvals, y, lastvals))
     return np.convolve( m[::-1], y, mode='valid')
+
+def smooth(x, window_len=11, window='hanning'):
+    if x.ndim!=1:
+        raise ValueError("Smooth only accepts 1 dimension arrays")
+    if x.size<window_len:
+        raise ValueError("Input vector needs to be bigger than window size")
+    if window_len<3:
+        return x
+    if not window in ['flat', 'hanning', 'hamming','bartlett','blackman']:
+        raise ValueError("Window is on of flat, hanning, hamming, bartlett, blackman")
+    s=np.r_[2*x[0]-x[window_len-1::-1],x,2*x[-1]-x[-1:-window_len:-1]]
+    if window=="flat": #moving average
+        w=np.ones(window_len, 'd')
+    else:
+        w=eval('np.'+window+'(window_len)')
+    y=np.convolve(w/w.sum(),s,mode='same')
+    return y[window_len:-window_len+1]
+
+# def baseline_als(y, lam, p, niter=10):
+#     L=len(y)
+#     D=sparse.csc_matrix(np.diff(np.eye(L),2))
+#     w=np.ones(L)
+#     for i in range(niter):
+#         W=sparse.spdiags(w,0,L,L)
+#         Z=W+lam*D.dot(D.transpose())
+#         z=spsolve(Z, w*y)
+#         w=p*(y>z)+(1-p)*(y<z)
+#     return z
+
+
+
 
 # Takes a row and returns the week number corresponding to the date in the DATE column
 def func(row):
@@ -74,6 +106,7 @@ def changepromo(df_total, status, canib, date):
         print("CREADO DF")
         if "P" in aux_df["STATUS_PROMO"].values:
             return "C"
+
 
 # Establish connection to SAP HANA server
 cnxn = pyodbc.connect('Driver=HDBODBC;SERVERNODE=172.31.100.155:30041;UID=SAPEP01;PWD=EfiProm2017')
@@ -404,6 +437,8 @@ for ent in entries:
 
                 for i, x in enumerate(BASELINE):
                     if i >= 3 and i < len(BASELINE) - 3:
+                        total_average=0
+                        contador=0
                         average = 0
                         vector = []
                         vector.append(BASELINE[i])
@@ -413,7 +448,15 @@ for ent in entries:
                         for j, y in enumerate(vector):
                             average += y
                         average = average / len(vector)
-                        var = average * 0.1
+                        var = average * 0.2
+                        for j, y in enumerate(vector):
+                            if y<average+var/1.5 and y>average-(2*var):
+                                total_average+=y
+                                contador+=1
+                        if contador>0:
+                            total_average=total_average/contador
+                        else: total_average=average
+                        var=total_average*0.1
                         #var = stats.stdev(vector, average)
                         #print("Average")
                         #print(average)
@@ -421,38 +464,58 @@ for ent in entries:
                         #print(var)
                         # vector_average.append(average)
                         # vector_var.append(var)
-                        if abs(BASELINE[i]) > average + float(var / 2) or abs(BASELINE[i]) < average - float(var):
-                            BASELINE[i] = average
+                        if abs(BASELINE[i]) > total_average + float(var / 2) or abs(BASELINE[i]) < total_average - float(var):
+                            BASELINE[i] = total_average
                     else:
                         if i in [0, 1, 2]:
                             vector = []
+                            total_average=0
+                            contador=0
                             average = 0
                             for b in range(0, 7):
                                 vector.append(BASELINE[i])
                             for b, x in enumerate(vector):
                                 average += x
                             average = average / len(vector)
-                            var = average * 0.1
+                            var = average * 0.2
+                            for j, y in enumerate(vector):
+                                if y < average + var/1.5 and y>average-(2*var):
+                                    total_average += y
+                                    contador += 1
+                            if contador>0:
+                                total_average = total_average / contador
+                            else: total_average=average
+                            var = total_average * 0.1
                             #var = stats.stdev(vector, average)
                             # vector_average.append(average)
                             # vector_var.append(var)
-                            if abs(BASELINE[i]) > average + float(var / 2) or abs(BASELINE[i]) < average - var:
-                                BASELINE[i] = average
+                            if abs(BASELINE[i]) > total_average + float(var / 2) or abs(BASELINE[i]) < total_average - var:
+                                BASELINE[i] = total_average
 
                         if i in [len(BASELINE) - 1, len(BASELINE) - 2, len(BASELINE) - 3]:
                             vector = []
                             average = 0
+                            total_average=0
+                            contador=0
                             for b in range(1, 8):
                                 vector.append(BASELINE[len(BASELINE) - b])
                             for j, y in enumerate(vector):
                                 average += y
                             average = average / len(vector)
-                            var = average * 0.1
+                            var = average * 0.2
+                            for j, y in enumerate(vector):
+                                if y < average + var/1.5 and y>average-(2*var):
+                                    total_average += y
+                                    contador += 1
+                            if contador>0:
+                                total_average = total_average / contador
+                            total_average=average
+                            var = total_average * 0.1
                             #var = stats.stdev(vector, average)
                             # vector_average.append(average)
                             # vector_var.append(var)
-                            if abs(BASELINE[i]) > average + float(var / 2) or abs(BASELINE[i]) < average - var:
-                                BASELINE[i] = average
+                            if abs(BASELINE[i]) > total_average + float(var / 2) or abs(BASELINE[i]) < total_average - var:
+                                BASELINE[i] = total_average
 
             # plt.plot(BASELINE)
             # Replace 0 for median of BASELINE vector (without 0 values)
@@ -511,7 +574,7 @@ for ent in entries:
             #print(BASELINE)
             #print(len(BASELINE))
             #Savitzky
-            ventana=11
+            ventana=31
             if(len(BASELINE)>30):
                 if len(BASELINE)<ventana:
                     if len(BASELINE)%2!=1:
@@ -520,6 +583,7 @@ for ent in entries:
                         ventana=len(BASELINE)
                 #BASELINE= savitzky_golay(BASELINE, ventana, 1)  # window size 51, polynomial order 3
 
+            BASELINE=smooth(BASELINE, ventana, window="blackman")
 
             # print("BASELINE DESPUÉS DE SAV")
             #print(BASELINE)
