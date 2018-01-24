@@ -8,9 +8,12 @@ import matplotlib.pyplot as plt
 from datetime import timedelta
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
+from scipy.ndimage.filters import maximum_filter1d
 import peakutils
 
 import csv
+
+closed_list = [446,5002,5004,5005,5011,5012,5013,5015,5018,5042,5058,5073,5081,5094,5123,5126,5162,5302,5317,5324,5326,5327,5474,5728,5740,5741,5755,5788,7425,7449,7450]
 
 mode = 1 #Eroski
 # mode = 2 #ECI
@@ -131,6 +134,17 @@ def slicing(BASELINE, deg = 3):
                 print(len(new_baseline))
                 print(new_baseline)
                 return new_baseline
+
+def max_filter1d_valid(a, W):
+    b = []
+    hW = W // 2
+    for i in range(hW, len(a) - hW):
+        print(a[i-hW:i + hW])
+        max = np.amax(a[i-hW:i + hW])
+        print(max)
+        b.append(max)
+    return b
+
 
 # Establish connection to SAP HANA server
 cnxn = pyodbc.connect('Driver=HDBODBC;SERVERNODE=172.31.100.155:30041;UID=SAPEP01;PWD=EfiProm2017')
@@ -392,7 +406,9 @@ for ent in entries:
         print("CONSTRUYENDO TOTAL DF")
         if(len(rows_list)>0):
             total = pd.DataFrame(rows_list)
-
+            # First check of total
+            print("CHECK 1 OF TOTAL")
+            print(total)
 
             # We add a column with the week number
             total["WEEK"] = total.apply(func, axis=1)
@@ -413,20 +429,23 @@ for ent in entries:
                 print("NOT Detrending")
                 total["TREND"] = 1.0
 
+            total = total.sort_values(by=['DATE'])
+
+
             # Now we have a dataframe with a trend column
             total["KL_DETREND"] = total.loc[:, "KL"] * total.loc[:, "TREND"]
             total["EUROS_DETREND"] = total.loc[:, "IMP"] * total.loc[:, "TREND"]
             # Now we have a dataframe with detrended columns
-
+            print("CHECK 1 BIS OF TOTAL")
+            print(total)
             #print(total)
             #if cpt ==0:
             #    total.to_csv("Dayana.csv", sep=",", index = False)
             #else:
             #    total.to_csv("Dayana.csv", mode='a', header=False, sep=",", index=False)
 
-
-
-
+            print("CHECK 2 OF TOTAL")
+            print(total)
             #insert promo columns in dataframe using join
             total = total.join(
                 df_promo.set_index(['FAMAPO', 'DATE', 'ENS','CDATA']),
@@ -449,12 +468,13 @@ for ent in entries:
             #reset_index
             total=total.reset_index(drop=True)
 
-
+            print("CHECK 3 OF TOTAL")
+            print(total)
 
 
 
             # BASELINE calculation
-            BASELINE = np.array(total.loc[:, "KL_DETREND"]).copy()
+            BASELINE = np.array(total.loc[:, "KL_DETREND"].copy())
             old_baseline = []
             means = []
             #using windows
@@ -483,11 +503,10 @@ for ent in entries:
 
                         if contador>0:
                             #total_average=total_average/contador
-                            old_baseline.append(total_average / contador)
+                            new_baseline[i] = (total_average / contador)
                             total_average = min
                         else:
-                            total_average=average
-                            old_baseline.append(total_average / contador)
+                            new_baseline[i]=0
                         print("MIN")
                         print(total_average)
                         means.append(total_average)
@@ -500,7 +519,6 @@ for ent in entries:
                         # vector_average.append(average)
                         # vector_var.append(var)
 
-                        new_baseline[i] = total_average
                         #BASELINE[i] = total_average
 
                         #if abs(BASELINE[i]) < total_average - float(var):
@@ -569,7 +587,18 @@ for ent in entries:
                                 new_baseline[i] = total_average
                                 #BASELINE[i] = total_average
 
-            BASELINE = np.array(means)
+            #BASELINE = np.array(means)
+            print("MMMMAXXXX")
+            #print(max_filter1d_valid(means,7))
+            #BASELINE = new_baseline
+            maxs = max_filter1d_valid(means,9)
+            maxs = np.array(maxs)
+            maxs = np.concatenate(([0,0,0,0],maxs,[0,0,0,0]))
+
+            print(len(maxs))
+            print(len(means))
+            BASELINE = means
+
             # plt.plot(BASELINE)
             # Replace 0 for median of BASELINE vector (without 0 values)
             # median = float(np.median(BASELINE[BASELINE > 0]))
@@ -600,7 +629,7 @@ for ent in entries:
             #plt.plot(total.loc[:,"KL_DETREND"])
             #plt.ylabel('some numbers')
             #plt.show()
-            total["BASELINE"] = BASELINE
+            #total["BASELINE"] = BASELINE
             # for i,x in enumerate(total.values):
             #      total_aux=total[(total["DATE"]<=(x[2]+timedelta(days=40))) & (total["DATE"]>=(x[2]-timedelta(days=40))) ].reset_index(drop=True)
             # #     print(str(x[2]))
@@ -634,13 +663,13 @@ for ent in entries:
                         ventana=len(BASELINE)-1
                     else:
                         ventana=len(BASELINE)
-                #BASELINE= savitzky_golay(BASELINE, ventana, 1)  # window size 51, polynomial order 3
+                BASELINE= savitzky_golay(BASELINE, ventana, 1)  # window size 51, polynomial order 3
 
 
 
 
 
-            BASELINE = slicing(BASELINE)
+            #BASELINE = slicing(BASELINE)
             #BASELINE = peakutils.baseline(BASELINE, deg=6, max_it=1000, tol=0.000001)
             #BASELINE = baseline_als(BASELINE)
             #BASELINE=smooth(BASELINE, ventana, window="blackman")
@@ -648,16 +677,19 @@ for ent in entries:
             # print("BASELINE DESPUÉS DE SAV")
             #print(BASELINE)
             #print(len(BASELINE))
-            treshold = float(0.25 * average_KL_DETREND)
+            treshold = float(0.5 * average_KL_DETREND)
             for i, x in enumerate(total["KL_DETREND"]):
                 if x<=treshold:
-                    #BASELINE[i]=x
-                    print()
+                    BASELINE[i]=x
 
             #print("TAM DE TOTAL")
             #print(len(total))
             #Add BASELINE column to our dataframe
+            # Check if total is ordered
+            print("CHECK TOTAL")
+            print(total)
             total["BASELINE"]=BASELINE
+
             #in days with low values of KL_DETREND we have to replace BASELINE value (BASELINE=KL_DETREND)
             #total["BASELINE"]=total.apply(replace,axis=1)
             #Add incremental KL_DETREND column to our dataframe
@@ -804,7 +836,7 @@ df_total2=pd.DataFrame(matriz_aux, columns=["CANT", "CDATA", "DATE", "ENS", "FAM
                                             "TEMATICA", "Abreviatura accion","Codigo unico","STATUS_PROMO", "BASELINE", "VENTA_INCREMENTAL",
                                             "VENTA_PROMO", "EUROS_PROMO", "Grupo canibalizacion"])
 df_total2["MEANS"] = means
-df_total2["OLD_BL"] = old_baseline
+df_total2["MAXS"] = maxs
 print(df_total2["MEANS"])
 df_total2.to_csv("data_famapo_122.csv", sep=';', decimal='.', float_format='%.6f')
 print("Finished writing file")
