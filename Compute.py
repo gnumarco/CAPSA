@@ -38,6 +38,8 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     m = np.linalg.pinv(b).A[deriv] * rate**deriv * factorial(deriv)
     # pad the signal at the extremes with
     # values taken from the signal itself
+    print(y[0])
+    print(np.abs( y[1:half_window+1][::-1] - y[0] ))
     firstvals = y[0] - np.abs( y[1:half_window+1][::-1] - y[0] )
     lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
     y = np.concatenate((firstvals, y, lastvals))
@@ -199,13 +201,13 @@ elif user=="M" and mode==3:
 
 
 promo = pd.read_excel(promo_file)
-print(promo)
-print(len(promo))
+#print(promo)
+#print(len(promo))
 #print(promo.duplicated())
 promo=promo.drop_duplicates(subset=["COD ENSEÑA", "CODIGO CLIENTE", "Fecha inicio folleto","Fecha fin folleto"," CODFamilia apo"])
 promo=promo.reset_index(drop=True)
-print(len(promo))
-print(promo)
+#print(len(promo))
+#print(promo)
 
 df_promo=pd.DataFrame(columns=["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion", "CDATA", "Codigo unico"])
 data_matrix = []
@@ -215,7 +217,7 @@ days_before=0
 days_after=0
 for row_promo in promo.values:
     #print(row_promo["Animacion 1"])
-    print(row_promo[0])
+    #print(row_promo[0])
     last_date=row_promo[4]+timedelta(days=days_after)
     first_date=row_promo[3]-timedelta(days=days_before)
     diff=last_date-(first_date-timedelta(days=days_before))
@@ -245,14 +247,14 @@ for row_promo in promo.values:
     #                    row_promo[9], row_promo[10], row_promo[11],
     #                    row_promo[14], row_promo[9], int(row_promo[1])]
     cont+=1
-    print(cont)
+    #print(cont)
     #print(df_promo)
 df_promo = pd.DataFrame(data_matrix)
 df_promo.columns = ["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion", "CDATA", "Codigo unico"]
 df_promo=df_promo.drop_duplicates(subset=["ENS", "CDATA","DATE","FAMAPO"])
 df_promo=df_promo.reset_index(drop=True)
 
-print(df_promo)
+#print(df_promo)
 
 # We read the seasonality file
 if user == "D":
@@ -320,7 +322,7 @@ for ent in entries:
 
         # We iterate in each row of the result
         for row in cursor.fetchall():
-            print(row)
+            #print(row)
             # We get the date of the row and cast it to a datetime
             myDate = datetime.datetime.strptime(row[4],'%Y%m%d')
 
@@ -373,42 +375,12 @@ for ent in entries:
             if str(row[2])=='':CDATA=0
             else: CDATA=int(row[2])
             dict1.update({"MAT":row[0], "ENS":row[1], "CDATA":CDATA, "FAMAPO":FAMAPO, "CANT":float(row[5]), "KL":float(row[6]), "IMP":float(row[7]), "DATE":myDate})
-            #print(dict1)
-
-
-            #value=False
-            #we search if the product in dict has promo
-            #print("ANTES DE BUCLE FOR EN PROMOS")
-            #for j in range(0, len(promo.index)):
-            #    row_promo = promo.loc[j, :]
-            #    if (not np.math.isnan(row_promo[7])):
-            #        if dict1["ENS"]==row_promo[2] and dict1["FAMAPO"]==row_promo[7]:
-            #            if dict1["DATE"]<=row_promo[4] and dict1["DATE"]>=row_promo[3]:
-            #                value=True
-            #                row_aux=j
-
-            #print("DESPUÉS DE BUCLE FOR EN PROMOS")
-            #value=True --> the product has promo
-            #if value:
-            #    dict1.update({"ANIM1":promo.iloc[row_aux]["Animacion 1"], "ANIM2":promo.iloc[row_aux]["Animacion 2"],
-            #                  "ANIM3":promo.iloc[row_aux]["Animacion 3"],
-            #                  "ABREVACC":promo.iloc[row_aux]["Abreviatura accion"],
-            #                  "TEMAT":promo.iloc[row_aux]["TEMATICA"]})
-
-            #else:
-            #   dict1.update({"ANIM1": 0, "ANIM2": 0,
-            #                  "ANIM3": 0, "ABREVACC": 0,"TEMAT": 0})
-
-            #print(dict1)
             rows_list.append(dict1)
 
         # We build the complete dataframe with all the rows: now we have exactly one row per day, without any missing value
         print("CONSTRUYENDO TOTAL DF")
         if(len(rows_list)>0):
             total = pd.DataFrame(rows_list)
-            # First check of total
-            print("CHECK 1 OF TOTAL")
-            print(total)
 
             # We add a column with the week number
             total["WEEK"] = total.apply(func, axis=1)
@@ -436,16 +408,14 @@ for ent in entries:
             total["KL_DETREND"] = total.loc[:, "KL"] * total.loc[:, "TREND"]
             total["EUROS_DETREND"] = total.loc[:, "IMP"] * total.loc[:, "TREND"]
             # Now we have a dataframe with detrended columns
-            print("CHECK 1 BIS OF TOTAL")
-            print(total)
+            #print("CHECK 1 BIS OF TOTAL")
+            #print(total)
             #print(total)
             #if cpt ==0:
             #    total.to_csv("Dayana.csv", sep=",", index = False)
             #else:
             #    total.to_csv("Dayana.csv", mode='a', header=False, sep=",", index=False)
 
-            print("CHECK 2 OF TOTAL")
-            print(total)
             #insert promo columns in dataframe using join
             total = total.join(
                 df_promo.set_index(['FAMAPO', 'DATE', 'ENS','CDATA']),
@@ -463,141 +433,49 @@ for ent in entries:
             #we calculate a new row called STATUS PROMO ("P" if there is promo)
             total["STATUS_PROMO"]=total.apply(ispromo,axis=1)
 
-            print("STATUS PROMO")
-            print(total["STATUS_PROMO"])
+            #print("STATUS PROMO")
+            #print(total["STATUS_PROMO"])
             #reset_index
             total=total.reset_index(drop=True)
-
-            print("CHECK 3 OF TOTAL")
-            print(total)
-
-
 
             # BASELINE calculation
             BASELINE = np.array(total.loc[:, "KL_DETREND"].copy())
             old_baseline = []
             means = []
             #using windows
-            if len(BASELINE) >= 9:
-                new_baseline = BASELINE.copy()
+            wS = 15
+            hWS = wS // 2
+            if len(BASELINE) >= wS:
                 for i, x in enumerate(BASELINE):
-                    if i >= 3 and i < len(BASELINE) - 3:
-                        total_average=0
-                        contador=0
-                        vector = BASELINE[i-3:i+4]
-                        average = np.mean(vector)
-                        print("VALOR")
-                        print(x)
-                        print("VECTOR")
-                        print(vector)
-                        var = average * 0.50
-                        min = 999999999999999999.99
-                        for j, y in enumerate(vector):
-                            if y<average+var and y>average-(var):
-                                total_average+=y
-                                contador+=1
+                    min = 999999999999999999.99
+                    total_average = 0
+                    contador = 0
+                    average = 0
+                    if i >= hWS and i < len(BASELINE) - hWS:
+                        vector = BASELINE[i-hWS:i+hWS+1]
+                    elif i in range(0,hWS):
+                        vector = BASELINE[0:wS]
+                    elif i in range(len(BASELINE) - hWS, len(BASELINE)):
+                        vector = BASELINE[len(BASELINE)-(wS+1):len(BASELINE)]
 
-                            if y >= average-var:
-                                if y<min:
-                                    min = y
+                    average = np.mean(vector)
+                    #print("VALOR")
+                    #print(x)
+                    #print("VECTOR")
+                    #print(vector)
+                    var = average * 0.50
 
-                        if contador>0:
-                            #total_average=total_average/contador
-                            new_baseline[i] = (total_average / contador)
-                            total_average = min
-                        else:
-                            new_baseline[i]=0
-                        print("MIN")
-                        print(total_average)
-                        means.append(total_average)
-                        #var=total_average*0.75
-                        #var = stats.stdev(vector, average)
-                        #print("Average")
-                        #print(average)
-                        #print("Variance")
-                        #print(var)
-                        # vector_average.append(average)
-                        # vector_var.append(var)
+                    for j, y in enumerate(vector):
+                        if y >= average-var:
+                            if y<min:
+                                min = y
+                    means.append(min)
 
-                        #BASELINE[i] = total_average
 
-                        #if abs(BASELINE[i]) < total_average - float(var):
-                        #if abs(BASELINE[i]) > total_average + float(var) or abs(BASELINE[i]) < total_average - float(var):
-                        #    BASELINE[i] = total_average
-                    else:
-                        if i in [0, 1, 2]:
-                            vector = []
-                            total_average=0
-                            contador=0
-                            average = 0
-                            for b in range(0, 7):
-                                vector.append(BASELINE[i])
-                            for b, x in enumerate(vector):
-                                average += x
-                            average = average / len(vector)
-                            var = average * 0.50
-                            for j, y in enumerate(vector):
-                                if y < average + var and y>average-(2*var):
-                                    total_average += y
-                                    contador += 1
+                #BASELINE = np.array(means)
 
-                            if contador>0:
-                                total_average = total_average / contador
-                                old_baseline.append(total_average)
-                            else:
-                                total_average = average
-                                old_baseline.append(total_average)
-                            means.append(total_average)
-                            var = total_average * 0.1
-                            #var = stats.stdev(vector, average)
-                            # vector_average.append(average)
-                            # vector_var.append(var)
-                            if abs(BASELINE[i]) > total_average + float(var / 2) or abs(BASELINE[i]) < total_average - var:
-                                #BASELINE[i] = total_average
-                                new_baseline[i] = total_average
-
-                        if i in [len(BASELINE) - 1, len(BASELINE) - 2, len(BASELINE) - 3]:
-                            vector = []
-                            average = 0
-                            total_average=0
-                            contador=0
-                            for b in range(1, 8):
-                                vector.append(BASELINE[len(BASELINE) - b])
-                            for j, y in enumerate(vector):
-                                average += y
-                            average = average / len(vector)
-                            var = average * 0.75
-                            for j, y in enumerate(vector):
-                                if y < average + var and y>average-(2*var):
-                                    total_average += y
-                                    contador += 1
-
-                            if contador>0:
-                                total_average = total_average / contador
-                                old_baseline.append(total_average)
-                            else:
-                                total_average=average
-                                old_baseline.append(total_average)
-                            means.append(total_average)
-                            var = total_average * 0.1
-                            #var = stats.stdev(vector, average)
-                            # vector_average.append(average)
-                            # vector_var.append(var)
-                            if abs(BASELINE[i]) > total_average + float(var / 2) or abs(BASELINE[i]) < total_average - var:
-                                new_baseline[i] = total_average
-                                #BASELINE[i] = total_average
-
-            #BASELINE = np.array(means)
-            print("MMMMAXXXX")
-            #print(max_filter1d_valid(means,7))
-            #BASELINE = new_baseline
-            maxs = max_filter1d_valid(means,9)
-            maxs = np.array(maxs)
-            maxs = np.concatenate(([0,0,0,0],maxs,[0,0,0,0]))
-
-            print(len(maxs))
-            print(len(means))
-            BASELINE = means
+                print(len(means))
+                BASELINE = np.array(means)
 
             # plt.plot(BASELINE)
             # Replace 0 for median of BASELINE vector (without 0 values)
@@ -656,6 +534,9 @@ for ent in entries:
             #print(BASELINE)
             #print(len(BASELINE))
             #Savitzky
+            print("BASELINE")
+            print(type(BASELINE[0]))
+            print(BASELINE)
             ventana=31
             if(len(BASELINE)>30):
                 if len(BASELINE)<ventana:
@@ -836,9 +717,9 @@ df_total2=pd.DataFrame(matriz_aux, columns=["CANT", "CDATA", "DATE", "ENS", "FAM
                                             "TEMATICA", "Abreviatura accion","Codigo unico","STATUS_PROMO", "BASELINE", "VENTA_INCREMENTAL",
                                             "VENTA_PROMO", "EUROS_PROMO", "Grupo canibalizacion"])
 df_total2["MEANS"] = means
-df_total2["MAXS"] = maxs
+
 print(df_total2["MEANS"])
-df_total2.to_csv("data_famapo_122.csv", sep=';', decimal='.', float_format='%.6f')
+df_total2.to_csv("data_eroski.csv", sep=';', decimal='.', float_format='%.6f')
 print("Finished writing file")
 
 
