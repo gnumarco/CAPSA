@@ -147,6 +147,11 @@ def max_filter1d_valid(a, W):
         b.append(max)
     return b
 
+def reject_outliers(data, m = 2.):
+    d = np.abs(data - np.median(data))
+    mdev = np.median(d)
+    s = d/mdev if mdev else 0.
+    return data[s<m]
 
 # Establish connection to SAP HANA server
 cnxn = pyodbc.connect('Driver=HDBODBC;SERVERNODE=172.31.100.155:30041;UID=SAPEP01;PWD=EfiProm2017')
@@ -264,7 +269,7 @@ elif user == "M":
 station = pd.read_excel(station_file, 1)
 for ent in entries:
     #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
-    #if ent[1]=="Z5E99K" and ent[3]!="111":
+    #if ent[1]=="Z5E99K":
     if ent[3]=="122" and ent[1]=="Z5E99K" and ent[0]=="000000000000011467" and ent[2]=="0000121062":
     #if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062": 
         print("VALOR DE SFAPO: ")
@@ -443,7 +448,7 @@ for ent in entries:
             old_baseline = []
             means = []
             #using windows
-            wS = 15
+            wS = 5
             hWS = wS // 2
             if len(BASELINE) >= wS:
                 for i, x in enumerate(BASELINE):
@@ -458,7 +463,12 @@ for ent in entries:
                     elif i in range(len(BASELINE) - hWS, len(BASELINE)):
                         vector = BASELINE[len(BASELINE)-(wS+1):len(BASELINE)]
 
-                    average = np.mean(vector)
+                    no_out = reject_outliers(vector,1.7)
+                    #print(vector)
+                    #print(no_out)
+
+                    average = np.mean(no_out)
+
                     #print("VALOR")
                     #print(x)
                     #print("VECTOR")
@@ -469,7 +479,7 @@ for ent in entries:
                         if y >= average-var:
                             if y<min:
                                 min = y
-                    means.append(min)
+                    means.append(average)
 
 
                 #BASELINE = np.array(means)
@@ -491,7 +501,7 @@ for ent in entries:
 
             #we want to replace values of baseline in promo days for average of KL_DETREND in days without promo
             average_KL_DETREND_nopromo=0
-            average_KL_DETREND=float(np.median(total.loc[:,"KL_DETREND"]))
+            average_KL_DETREND=BASELINE.mean()
             print("AV KL_DETREND")
             print(average_KL_DETREND)
 
@@ -507,25 +517,21 @@ for ent in entries:
             #plt.plot(total.loc[:,"KL_DETREND"])
             #plt.ylabel('some numbers')
             #plt.show()
-            #total["BASELINE"] = BASELINE
-            # for i,x in enumerate(total.values):
-            #      total_aux=total[(total["DATE"]<=(x[2]+timedelta(days=40))) & (total["DATE"]>=(x[2]-timedelta(days=40))) ].reset_index(drop=True)
+            total["BASELINE"] = BASELINE
+            for i,x in enumerate(total.values):
+                total_aux=total[(total["DATE"]<=(x[2]+timedelta(days=40))) & (total["DATE"]>=(x[2]-timedelta(days=40))) ].reset_index(drop=True)
             # #     print(str(x[2]))
-            # #     print("LEN total_aux")
-            # #     print(len(total_aux))
-            #      aux=0
-            #      for j in range(0, len(total_aux)):
-            #          if total_aux.loc[j,"STATUS_PROMO"] != "P" and total_aux.loc[j,"KL_DETREND"]!=0:
-            #              average_KL_DETREND_nopromo += total_aux.loc[j, "BASELINE"]
-            #              aux += 1
-            #      if aux!=0: average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
+                #print("LEN total_aux")
+                #print(len(total_aux))
+                #print(total_aux)
+                aux=0
+                for j in range(0, len(total_aux)):
+                    if total_aux.loc[j,"STATUS_PROMO"] != "P" and total_aux.loc[j,"KL_DETREND"]!=0:
+                        average_KL_DETREND_nopromo += total_aux.loc[j, "BASELINE"]
+                        aux += 1
+                if aux!=0: average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
             # #    if x[18]=="P": BASELINE[i]=average_KL_DETREND
-            #      if x[18]=="P": BASELINE[i]=average_KL_DETREND_nopromo
-            # #     print("Baseline")
-            # #     print(average_KL_DETREND_nopromo)
-
-
-
+                if x[18]=="P": BASELINE[i]=average_KL_DETREND_nopromo
 
             #print("BASELINE CON KL_DETREND AVERAGE EN DÍAS CON PROMO")
             #print(BASELINE)
@@ -537,14 +543,14 @@ for ent in entries:
             print("BASELINE")
             print(type(BASELINE[0]))
             print(BASELINE)
-            ventana=31
+            ventana=21
             if(len(BASELINE)>30):
                 if len(BASELINE)<ventana:
                     if len(BASELINE)%2!=1:
                         ventana=len(BASELINE)-1
                     else:
                         ventana=len(BASELINE)
-                BASELINE= savitzky_golay(BASELINE, ventana, 1)  # window size 51, polynomial order 3
+                BASELINE= savitzky_golay(BASELINE, ventana, 2)  # window size 51, polynomial order 3
 
 
 
@@ -569,7 +575,12 @@ for ent in entries:
             # Check if total is ordered
             print("CHECK TOTAL")
             print(total)
-            total["BASELINE"]=BASELINE
+
+
+            for i,x in enumerate(total.values):
+                if x[2].isoweekday() == 6: BASELINE[i] = x[10]
+
+            total["BASELINE"] = BASELINE
 
             #in days with low values of KL_DETREND we have to replace BASELINE value (BASELINE=KL_DETREND)
             #total["BASELINE"]=total.apply(replace,axis=1)
@@ -617,12 +628,13 @@ data_canib=df_total.groupby(['Grupo canibalizacion', 'DATE'])
 print(len(data_canib))
 dict_promo={}
 #we create a dictionary which shows if each group of "Grupo canibalizacion_DATE" has promo("P") or not
+print(type(data_canib))
 for df in data_canib:
-    print(df)
-    print("df[0]")
-    print(df[0])
-    print("df[1]")
-    print(df[1])
+    #print(df)
+    #print("df[0]")
+    #print(df[0])
+    #print("df[1]")
+    #print(df[1])
     codigo_unico=[]
     if df[0]!=-1:
         if "P" in df[1].reset_index(drop=True).loc[:,"STATUS_PROMO"].values:
@@ -631,11 +643,11 @@ for df in data_canib:
             #print("CODIGO UNICO")
             #print(codigo_unico)
             dict_promo[str(df[1].reset_index(drop=True).loc[0,"Grupo canibalizacion"])+"_"+str(df[1].reset_index(drop=True).loc[0,"DATE"])]=codigo_unico[0]
-            print("RELLENANDO CON CÓDIGO ÚNICO DE PROMO")
+            #print("RELLENANDO CON CÓDIGO ÚNICO DE PROMO")
         else:
             dict_promo[str(df[1].reset_index(drop=True).loc[0, "Grupo canibalizacion"]) + "_" + str(
                 df[1].reset_index(drop=True).loc[0, "DATE"])] = 0
-            print("RELLENANDO CON 0")
+            #print("RELLENANDO CON 0")
 
 print("DICCIONARIO PROMOS")
 print(dict_promo)
@@ -649,7 +661,7 @@ for i, x in enumerate(matriz_aux):
     #row=df_total.iloc[i,:]
     key = str(x[23]) + "_" + str(x[2])
     #key=str(row["Grupo canibalizacion"])+"_"+str(row["DATE"])
-    if x[18]!="P":  matriz_aux[i,20]=0  # if no promo, venta_incremental=0
+    if x[18] not in ["P","C"]:  matriz_aux[i,20]=0  # if no promo, venta_incremental=0
     if key in dict_promo:
         if dict_promo[key]!=0:
             #df_total[i,"STATUS_PROMO"]="C"
@@ -718,7 +730,7 @@ df_total2=pd.DataFrame(matriz_aux, columns=["CANT", "CDATA", "DATE", "ENS", "FAM
                                             "VENTA_PROMO", "EUROS_PROMO", "Grupo canibalizacion"])
 df_total2["MEANS"] = means
 
-print(df_total2["MEANS"])
+#print(df_total2["MEANS"])
 df_total2.to_csv("data_eroski.csv", sep=';', decimal='.', float_format='%.6f')
 print("Finished writing file")
 
