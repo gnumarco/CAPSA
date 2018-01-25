@@ -18,8 +18,9 @@ closed_list = [446,5002,5004,5005,5011,5012,5013,5015,5018,5042,5058,5073,5081,5
 mode = 1 #Eroski
 # mode = 2 #ECI
 #mode = 3
-user = "S"
+user = "M"
 
+# mode_baseline 2 is means by week days
 mode_baseline = 2
 
 
@@ -194,9 +195,9 @@ df_total=None
 
 # We read promotion file and make a new dataframe to use the function "join" in order to calculate promos
 if user == "D" and mode == 1:
-    promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1710_II.xlsx"
+    promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712.xlsx"
 elif user == "M" and mode == 1:
-    promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1710_II.XLSX"
+    promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712.xlsx"
 elif user == "D" and mode == 2:
     promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 elif user == "M" and mode == 2:
@@ -464,7 +465,7 @@ for ent in entries:
             wS = 5
             hWS = wS // 2
             print(total)
-            bs2WS = 120
+            bs2WS = 60
             bs2hWS = bs2WS // 2
             if len(BASELINE) >= wS:
                 for i, x in enumerate(BASELINE):
@@ -635,8 +636,10 @@ for ent in entries:
 
                 for i,x in enumerate(total.values):
                     if x[2].isoweekday() == 6: BASELINE[i] = x[10]
-
-            total["BASELINE"] = BASELINE2
+            if mode_baseline ==1:
+                total["BASELINE"] = BASELINE
+            elif mode_baseline == 2:
+                total["BASELINE"] = BASELINE2
 
             #in days with low values of KL_DETREND we have to replace BASELINE value (BASELINE=KL_DETREND)
             #total["BASELINE"]=total.apply(replace,axis=1)
