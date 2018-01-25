@@ -20,6 +20,8 @@ mode = 1 #Eroski
 #mode = 3
 user = "M"
 
+mode_baseline = 2
+
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     try:
@@ -270,7 +272,7 @@ station = pd.read_excel(station_file, 1)
 for ent in entries:
     #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
     #if ent[1]=="Z5E99K":
-    if ent[3]=="122" and ent[1]=="Z5E99K" and ent[0]=="000000000000011467" and ent[2]=="0000121062":
+    #if ent[3]=="122" and ent[1]=="Z5E99K" and ent[0]=="000000000000011467" and ent[2]=="0000121062":
     #if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062": 
         print("VALOR DE SFAPO: ")
         print(str(ent[3]))
@@ -443,50 +445,99 @@ for ent in entries:
             #reset_index
             total=total.reset_index(drop=True)
 
+
+
+
+
+
             # BASELINE calculation
             BASELINE = np.array(total.loc[:, "KL_DETREND"].copy())
+            BASELINE2 = BASELINE.copy()
             old_baseline = []
             means = []
             #using windows
             wS = 5
             hWS = wS // 2
+            print(total)
+            bs2WS = 120
+            bs2hWS = bs2WS // 2
             if len(BASELINE) >= wS:
                 for i, x in enumerate(BASELINE):
-                    min = 999999999999999999.99
-                    total_average = 0
-                    contador = 0
-                    average = 0
-                    if i >= hWS and i < len(BASELINE) - hWS:
-                        vector = BASELINE[i-hWS:i+hWS+1]
-                    elif i in range(0,hWS):
-                        vector = BASELINE[0:wS]
-                    elif i in range(len(BASELINE) - hWS, len(BASELINE)):
-                        vector = BASELINE[len(BASELINE)-(wS+1):len(BASELINE)]
+                    dayOfWeek = (total.values[i,2]).isoweekday()
+                    #print(dayOfWeek)
+                    days = []
+                    #Baseline2
+                    #print("BASELINE2")
+                    if i >= bs2hWS and i < len(BASELINE) - bs2hWS:
+                        vector = total.values[i - bs2hWS:i + bs2hWS + 1,:]
+                        #print(vector)
 
-                    no_out = reject_outliers(vector,1.7)
+
+                    elif i in range(0, bs2hWS):
+                        vector = total.values[0:bs2WS,:]
+                        #print("VECTOR")
+                        #print(vector)
+                    elif i in range(len(BASELINE) - bs2hWS, len(BASELINE)):
+                        vector = total.values[len(BASELINE) - (bs2WS + 1):len(BASELINE),:]
+
+                    # Compute means for each day of the week
+                    #print("LENGTH VECTOR")
+                    #print(len(vector))
                     #print(vector)
-                    #print(no_out)
-
-                    average = np.mean(no_out)
-
-                    #print("VALOR")
-                    #print(x)
-                    #print("VECTOR")
-                    #print(vector)
-                    var = average * 0.50
-
-                    for j, y in enumerate(vector):
-                        if y >= average-var:
-                            if y<min:
-                                min = y
-                    means.append(average)
+                    for it in range(0,len(vector)):
+                        if vector[it, 18] != "P" and (
+                        vector[it,2]).isoweekday() == dayOfWeek:
+                            days.append(vector[it, 10])
+                    if len(days) == 0:
+                        print("DID NOT FIND ANY DAY FOR " + str(total["DATE"].iloc[i]) + " !!!!")
+                        #print(vector)
+                    #print(days)
+                    meanDay = np.mean(days)
+                    #print(meanDay)
+                    BASELINE2[i] = meanDay
 
 
+                # normal baseline
+                    if mode_baseline == 1:
+                        min = 999999999999999999.99
+                        total_average = 0
+                        contador = 0
+                        average = 0
+                        if i >= hWS and i < len(BASELINE) - hWS:
+                            vector = BASELINE[i-hWS:i+hWS+1]
+                        elif i in range(0,hWS):
+                            vector = BASELINE[0:wS]
+                        elif i in range(len(BASELINE) - hWS, len(BASELINE)):
+                            vector = BASELINE[len(BASELINE)-(wS+1):len(BASELINE)]
+
+                        no_out = reject_outliers(vector,1.7)
+                        #print(vector)
+                        #print(no_out)
+
+                        average = np.mean(no_out)
+
+                        #print("VALOR")
+                        #print(x)
+                        #print("VECTOR")
+                        #print(vector)
+                        var = average * 0.50
+
+                        for j, y in enumerate(vector):
+                            if y >= average-var:
+                                if y<min:
+                                    min = y
+                        means.append(average)
+
+                #print(days)
                 #BASELINE = np.array(means)
 
-                print(len(means))
-                BASELINE = np.array(means)
-
+                #print(len(means))
+                #print("LENGTH")
+                #print(len(BASELINE))
+                #print(len(BASELINE2))
+                #print(BASELINE2)
+                #BASELINE = np.array(means)
+                #BASELINE = BASELINE2
             # plt.plot(BASELINE)
             # Replace 0 for median of BASELINE vector (without 0 values)
             # median = float(np.median(BASELINE[BASELINE > 0]))
@@ -498,89 +549,89 @@ for ent in entries:
 
 
 
+            if mode_baseline == 1:
+                #we want to replace values of baseline in promo days for average of KL_DETREND in days without promo
+                average_KL_DETREND_nopromo=0
+                average_KL_DETREND=BASELINE.mean()
+                print("AV KL_DETREND")
+                print(average_KL_DETREND)
 
-            #we want to replace values of baseline in promo days for average of KL_DETREND in days without promo
-            average_KL_DETREND_nopromo=0
-            average_KL_DETREND=BASELINE.mean()
-            print("AV KL_DETREND")
-            print(average_KL_DETREND)
-
-             #   #KL_DETREND column number=10
-             #   if x!="P":
-             #       average_KL_DETREND_nopromo+=total.loc[i,"KL_DETREND"]
-             #       aux += 1
-
-
-            #print("AVERAGE")
-            #print(average_KL_DETREND_nopromo)
-            #plt.plot(BASELINE)
-            #plt.plot(total.loc[:,"KL_DETREND"])
-            #plt.ylabel('some numbers')
-            #plt.show()
-            total["BASELINE"] = BASELINE
-            for i,x in enumerate(total.values):
-                total_aux=total[(total["DATE"]<=(x[2]+timedelta(days=40))) & (total["DATE"]>=(x[2]-timedelta(days=40))) ].reset_index(drop=True)
-            # #     print(str(x[2]))
-                #print("LEN total_aux")
-                #print(len(total_aux))
-                #print(total_aux)
-                aux=0
-                for j in range(0, len(total_aux)):
-                    if total_aux.loc[j,"STATUS_PROMO"] != "P" and total_aux.loc[j,"KL_DETREND"]!=0:
-                        average_KL_DETREND_nopromo += total_aux.loc[j, "BASELINE"]
-                        aux += 1
-                if aux!=0: average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
-            # #    if x[18]=="P": BASELINE[i]=average_KL_DETREND
-                if x[18]=="P": BASELINE[i]=average_KL_DETREND_nopromo
-
-            #print("BASELINE CON KL_DETREND AVERAGE EN DÍAS CON PROMO")
-            #print(BASELINE)
-
-            #print("BASELINE ANTES DE SAV")
-            #print(BASELINE)
-            #print(len(BASELINE))
-            #Savitzky
-            print("BASELINE")
-            print(type(BASELINE[0]))
-            print(BASELINE)
-            ventana=21
-            if(len(BASELINE)>30):
-                if len(BASELINE)<ventana:
-                    if len(BASELINE)%2!=1:
-                        ventana=len(BASELINE)-1
-                    else:
-                        ventana=len(BASELINE)
-                BASELINE= savitzky_golay(BASELINE, ventana, 2)  # window size 51, polynomial order 3
+                 #   #KL_DETREND column number=10
+                 #   if x!="P":
+                 #       average_KL_DETREND_nopromo+=total.loc[i,"KL_DETREND"]
+                 #       aux += 1
 
 
+                #print("AVERAGE")
+                #print(average_KL_DETREND_nopromo)
+                #plt.plot(BASELINE)
+                #plt.plot(total.loc[:,"KL_DETREND"])
+                #plt.ylabel('some numbers')
+                #plt.show()
+                total["BASELINE"] = BASELINE
+                for i,x in enumerate(total.values):
+                    total_aux=total[(total["DATE"]<=(x[2]+timedelta(days=40))) & (total["DATE"]>=(x[2]-timedelta(days=40))) ].reset_index(drop=True)
+                # #     print(str(x[2]))
+                    #print("LEN total_aux")
+                    #print(len(total_aux))
+                    #print(total_aux)
+                    aux=0
+                    for j in range(0, len(total_aux)):
+                        if total_aux.loc[j,"STATUS_PROMO"] != "P" and total_aux.loc[j,"KL_DETREND"]!=0:
+                            average_KL_DETREND_nopromo += total_aux.loc[j, "BASELINE"]
+                            aux += 1
+                    if aux!=0: average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
+                # #    if x[18]=="P": BASELINE[i]=average_KL_DETREND
+                    if x[18]=="P": BASELINE[i]=average_KL_DETREND_nopromo
+
+                #print("BASELINE CON KL_DETREND AVERAGE EN DÍAS CON PROMO")
+                #print(BASELINE)
+
+                #print("BASELINE ANTES DE SAV")
+                #print(BASELINE)
+                #print(len(BASELINE))
+                #Savitzky
+                print("BASELINE")
+                print(type(BASELINE[0]))
+                print(BASELINE)
+                ventana=21
+                if(len(BASELINE)>30):
+                    if len(BASELINE)<ventana:
+                        if len(BASELINE)%2!=1:
+                            ventana=len(BASELINE)-1
+                        else:
+                            ventana=len(BASELINE)
+                    BASELINE= savitzky_golay(BASELINE, ventana, 2)  # window size 51, polynomial order 3
 
 
 
-            #BASELINE = slicing(BASELINE)
-            #BASELINE = peakutils.baseline(BASELINE, deg=6, max_it=1000, tol=0.000001)
-            #BASELINE = baseline_als(BASELINE)
-            #BASELINE=smooth(BASELINE, ventana, window="blackman")
-
-            # print("BASELINE DESPUÉS DE SAV")
-            #print(BASELINE)
-            #print(len(BASELINE))
-            treshold = float(0.5 * average_KL_DETREND)
-            for i, x in enumerate(total["KL_DETREND"]):
-                if x<=treshold:
-                    BASELINE[i]=x
-
-            #print("TAM DE TOTAL")
-            #print(len(total))
-            #Add BASELINE column to our dataframe
-            # Check if total is ordered
-            print("CHECK TOTAL")
-            print(total)
 
 
-            for i,x in enumerate(total.values):
-                if x[2].isoweekday() == 6: BASELINE[i] = x[10]
+                #BASELINE = slicing(BASELINE)
+                #BASELINE = peakutils.baseline(BASELINE, deg=6, max_it=1000, tol=0.000001)
+                #BASELINE = baseline_als(BASELINE)
+                #BASELINE=smooth(BASELINE, ventana, window="blackman")
 
-            total["BASELINE"] = BASELINE
+                # print("BASELINE DESPUÉS DE SAV")
+                #print(BASELINE)
+                #print(len(BASELINE))
+                treshold = float(0.5 * average_KL_DETREND)
+                for i, x in enumerate(total["KL_DETREND"]):
+                    if x<=treshold:
+                        BASELINE[i]=x
+
+                #print("TAM DE TOTAL")
+                #print(len(total))
+                #Add BASELINE column to our dataframe
+                # Check if total is ordered
+                print("CHECK TOTAL")
+                print(total)
+
+
+                for i,x in enumerate(total.values):
+                    if x[2].isoweekday() == 6: BASELINE[i] = x[10]
+
+            total["BASELINE"] = BASELINE2
 
             #in days with low values of KL_DETREND we have to replace BASELINE value (BASELINE=KL_DETREND)
             #total["BASELINE"]=total.apply(replace,axis=1)
@@ -608,6 +659,8 @@ for ent in entries:
         cpt += 1
         print("NÚMERO DE QUERYS REALIZADAS")
         print(cpt)
+
+        #total["BASELINE"] = BASELINE2
 
 #print("DF ANTES DE CANIB")
 #print(df_total)
@@ -728,7 +781,7 @@ df_total2=pd.DataFrame(matriz_aux, columns=["CANT", "CDATA", "DATE", "ENS", "FAM
                                             "KL_DETREND","EUROS_DETREND","Animacion 1", "Animacion 2", "Animacion 3",
                                             "TEMATICA", "Abreviatura accion","Codigo unico","STATUS_PROMO", "BASELINE", "VENTA_INCREMENTAL",
                                             "VENTA_PROMO", "EUROS_PROMO", "Grupo canibalizacion"])
-df_total2["MEANS"] = means
+#df_total2["MEANS"] = BASELINE2
 
 #print(df_total2["MEANS"])
 df_total2.to_csv("data_eroski.csv", sep=';', decimal='.', float_format='%.6f')
