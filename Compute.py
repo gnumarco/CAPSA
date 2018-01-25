@@ -18,7 +18,7 @@ closed_list = [446,5002,5004,5005,5011,5012,5013,5015,5018,5042,5058,5073,5081,5
 mode = 1 #Eroski
 # mode = 2 #ECI
 #mode = 3
-user = "M"
+user = "S"
 
 mode_baseline = 2
 
@@ -205,6 +205,8 @@ elif user=="D" and mode ==3:
     promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 elif user=="M" and mode==3:
     promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
+elif user == "S" and mode == 1:
+    promo_file = "C:\\Datos analisis\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712.xlsx"
 
 
 promo = pd.read_excel(promo_file)
@@ -268,6 +270,9 @@ if user == "D":
     station_file = "C:\\Users\\tr5568\\Desktop\\DAYANA\\CAPSA\\Tabla_estacionalidad fichero carga.xlsx"
 elif user == "M":
     station_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\Tabla_estacionalidad fichero carga.xlsx"
+elif user == "S":
+     station_file = "C:\\Datos analisis\\Tabla_estacionalidad fichero carga.xlsx"
+
 station = pd.read_excel(station_file, 1)
 for ent in entries:
     #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
@@ -670,6 +675,9 @@ if user == "D":
     canib_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Canib.xlsx"
 elif user == "M":
     canib_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\Canib.xlsx"
+elif user == "S":
+    canib_file = "C:\\Datos analisis\\Canib.xlsx"
+
 canib_excel = pd.read_excel(canib_file)
 df_total = df_total.join(canib_excel.set_index('Cod. Familia'), on='FAMAPO')
 #print(df_total)
