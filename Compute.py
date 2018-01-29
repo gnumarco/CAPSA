@@ -4,19 +4,21 @@ import datetime
 import numpy as np
 from math import factorial
 import statistics as stats
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from datetime import timedelta
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
+from scipy.ndimage.filters import maximum_filter1d
 import peakutils
-import xlrd
 
 import csv
+
+closed_list = [446,5002,5004,5005,5011,5012,5013,5015,5018,5042,5058,5073,5081,5094,5123,5126,5162,5302,5317,5324,5326,5327,5474,5728,5740,5741,5755,5788,7425,7449,7450]
 
 mode = 1 #Eroski
 # mode = 2 #ECI
 #mode = 3
-user = "D"
+user = "M"
 
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
@@ -36,6 +38,8 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     m = np.linalg.pinv(b).A[deriv] * rate**deriv * factorial(deriv)
     # pad the signal at the extremes with
     # values taken from the signal itself
+    print(y[0])
+    print(np.abs( y[1:half_window+1][::-1] - y[0] ))
     firstvals = y[0] - np.abs( y[1:half_window+1][::-1] - y[0] )
     lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
     y = np.concatenate((firstvals, y, lastvals))
@@ -111,6 +115,43 @@ def changepromo(df_total, status, canib, date):
         if "P" in aux_df["STATUS_PROMO"].values:
             return "C"
 
+def slicing(BASELINE, deg = 3):
+                slicing = 90
+                part = len(BASELINE) // slicing
+                rest = len(BASELINE) % slicing
+                print("PART")
+                print(part)
+                print("REST")
+                print(rest)
+                new_baseline = []
+                for zz in range(0, part):
+                    tmp_baseline = BASELINE[zz * slicing:(zz * slicing) + slicing]
+                    print(tmp_baseline)
+                    tmp_baseline = peakutils.baseline(tmp_baseline, deg=deg, max_it=1000, tol=0.000001)
+                    new_baseline.extend(tmp_baseline)
+                new_baseline.extend(peakutils.baseline(BASELINE[part:part + rest], deg=deg, max_it=1000, tol=0.000001))
+
+                print("New Baseline")
+                print(len(BASELINE))
+                print(len(new_baseline))
+                print(new_baseline)
+                return new_baseline
+
+def max_filter1d_valid(a, W):
+    b = []
+    hW = W // 2
+    for i in range(hW, len(a) - hW):
+        print(a[i-hW:i + hW])
+        max = np.amax(a[i-hW:i + hW])
+        print(max)
+        b.append(max)
+    return b
+
+def reject_outliers(data, m = 2.):
+    d = np.abs(data - np.median(data))
+    mdev = np.median(d)
+    s = d/mdev if mdev else 0.
+    return data[s<m]
 
 # Establish connection to SAP HANA server
 cnxn = pyodbc.connect('Driver=HDBODBC;SERVERNODE=172.31.100.155:30041;UID=SAPEP01;PWD=EfiProm2017')
@@ -165,13 +206,13 @@ elif user=="M" and mode==3:
 
 
 promo = pd.read_excel(promo_file)
-print(promo)
-print(len(promo))
+#print(promo)
+#print(len(promo))
 #print(promo.duplicated())
 promo=promo.drop_duplicates(subset=["COD ENSEÑA", "CODIGO CLIENTE", "Fecha inicio folleto","Fecha fin folleto"," CODFamilia apo"])
 promo=promo.reset_index(drop=True)
-print(len(promo))
-print(promo)
+#print(len(promo))
+#print(promo)
 
 df_promo=pd.DataFrame(columns=["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion", "CDATA", "Codigo unico"])
 data_matrix = []
@@ -181,7 +222,7 @@ days_before=0
 days_after=0
 for row_promo in promo.values:
     #print(row_promo["Animacion 1"])
-    print(row_promo[0])
+    #print(row_promo[0])
     last_date=row_promo[4]+timedelta(days=days_after)
     first_date=row_promo[3]-timedelta(days=days_before)
     diff=last_date-(first_date-timedelta(days=days_before))
@@ -211,14 +252,14 @@ for row_promo in promo.values:
     #                    row_promo[9], row_promo[10], row_promo[11],
     #                    row_promo[14], row_promo[9], int(row_promo[1])]
     cont+=1
-    print(cont)
+    #print(cont)
     #print(df_promo)
 df_promo = pd.DataFrame(data_matrix)
 df_promo.columns = ["ENS","FAMAPO","DATE","Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA","Abreviatura accion", "CDATA", "Codigo unico"]
 df_promo=df_promo.drop_duplicates(subset=["ENS", "CDATA","DATE","FAMAPO"])
 df_promo=df_promo.reset_index(drop=True)
 
-print(df_promo)
+#print(df_promo)
 
 # We read the seasonality file
 if user == "D":
@@ -228,7 +269,7 @@ elif user == "M":
 station = pd.read_excel(station_file, 1)
 for ent in entries:
     #if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
-    #if ent[1]=="Z5E99K" and ent[3]!="111":
+    #if ent[1]=="Z5E99K":
     if ent[3]=="122" and ent[1]=="Z5E99K" and ent[0]=="000000000000011467" and ent[2]=="0000121062":
     #if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062": 
         print("VALOR DE SFAPO: ")
@@ -286,7 +327,7 @@ for ent in entries:
 
         # We iterate in each row of the result
         for row in cursor.fetchall():
-            print(row)
+            #print(row)
             # We get the date of the row and cast it to a datetime
             myDate = datetime.datetime.strptime(row[4],'%Y%m%d')
 
@@ -339,40 +380,12 @@ for ent in entries:
             if str(row[2])=='':CDATA=0
             else: CDATA=int(row[2])
             dict1.update({"MAT":row[0], "ENS":row[1], "CDATA":CDATA, "FAMAPO":FAMAPO, "CANT":float(row[5]), "KL":float(row[6]), "IMP":float(row[7]), "DATE":myDate})
-            #print(dict1)
-
-
-            #value=False
-            #we search if the product in dict has promo
-            #print("ANTES DE BUCLE FOR EN PROMOS")
-            #for j in range(0, len(promo.index)):
-            #    row_promo = promo.loc[j, :]
-            #    if (not np.math.isnan(row_promo[7])):
-            #        if dict1["ENS"]==row_promo[2] and dict1["FAMAPO"]==row_promo[7]:
-            #            if dict1["DATE"]<=row_promo[4] and dict1["DATE"]>=row_promo[3]:
-            #                value=True
-            #                row_aux=j
-
-            #print("DESPUÉS DE BUCLE FOR EN PROMOS")
-            #value=True --> the product has promo
-            #if value:
-            #    dict1.update({"ANIM1":promo.iloc[row_aux]["Animacion 1"], "ANIM2":promo.iloc[row_aux]["Animacion 2"],
-            #                  "ANIM3":promo.iloc[row_aux]["Animacion 3"],
-            #                  "ABREVACC":promo.iloc[row_aux]["Abreviatura accion"],
-            #                  "TEMAT":promo.iloc[row_aux]["TEMATICA"]})
-
-            #else:
-            #   dict1.update({"ANIM1": 0, "ANIM2": 0,
-            #                  "ANIM3": 0, "ABREVACC": 0,"TEMAT": 0})
-
-            #print(dict1)
             rows_list.append(dict1)
 
         # We build the complete dataframe with all the rows: now we have exactly one row per day, without any missing value
         print("CONSTRUYENDO TOTAL DF")
         if(len(rows_list)>0):
             total = pd.DataFrame(rows_list)
-
 
             # We add a column with the week number
             total["WEEK"] = total.apply(func, axis=1)
@@ -393,19 +406,20 @@ for ent in entries:
                 print("NOT Detrending")
                 total["TREND"] = 1.0
 
+            total = total.sort_values(by=['DATE'])
+
+
             # Now we have a dataframe with a trend column
             total["KL_DETREND"] = total.loc[:, "KL"] * total.loc[:, "TREND"]
             total["EUROS_DETREND"] = total.loc[:, "IMP"] * total.loc[:, "TREND"]
             # Now we have a dataframe with detrended columns
-
+            #print("CHECK 1 BIS OF TOTAL")
+            #print(total)
             #print(total)
             #if cpt ==0:
             #    total.to_csv("Dayana.csv", sep=",", index = False)
             #else:
             #    total.to_csv("Dayana.csv", mode='a', header=False, sep=",", index=False)
-
-
-
 
             #insert promo columns in dataframe using join
             total = total.join(
@@ -424,110 +438,59 @@ for ent in entries:
             #we calculate a new row called STATUS PROMO ("P" if there is promo)
             total["STATUS_PROMO"]=total.apply(ispromo,axis=1)
 
-            print("STATUS PROMO")
-            print(total["STATUS_PROMO"])
+            #print("STATUS PROMO")
+            #print(total["STATUS_PROMO"])
             #reset_index
             total=total.reset_index(drop=True)
 
-
-
-
-
             # BASELINE calculation
-            BASELINE = np.array(total.loc[:, "KL_DETREND"])
-
-            # using windows
-            if len(BASELINE) >= 15:
-
+            BASELINE = np.array(total.loc[:, "KL_DETREND"].copy())
+            old_baseline = []
+            means = []
+            #using windows
+            wS = 5
+            hWS = wS // 2
+            if len(BASELINE) >= wS:
                 for i, x in enumerate(BASELINE):
-                    if i >= 7 and i < len(BASELINE) - 7:
-                        total_average=0
-                        contador=0
-                        average = 0
-                        vector = []
-                        vector.append(BASELINE[i])
-                        for j in range(1, 4):
-                            vector.append(BASELINE[i - j])
-                            vector.append(BASELINE[i + j])
-                        for j, y in enumerate(vector):
-                            average += y
-                        average = average / len(vector)
-                        var = average * 0.5
-                        for j, y in enumerate(vector):
-                            if y<average+(var/8) and y>average-(var):
-                                total_average+=y
-                                contador+=1
-                        if contador>0:
-                            total_average=total_average/contador
-                        else: total_average=average
-                        var=total_average*0.1
-                        #var = stats.stdev(vector, average)
-                        #print("Average")
-                        #print(average)
-                        #print("Variance")
-                        #print(var)
-                        # vector_average.append(average)
-                        # vector_var.append(var)
-                        #if abs(BASELINE[i]) > total_average + float(var / 2) or abs(BASELINE[i]) < total_average - float(var):
-                        if abs(BASELINE[i]) < total_average - var:
-                            BASELINE[i] = total_average
-                    else:
-                        if i in [0, 1, 2, 4, 5, 6]:
-                            vector = []
-                            total_average=0
-                            contador=0
-                            average = 0
-                            for b in range(0, 7):
-                                vector.append(BASELINE[i])
-                            for b, x in enumerate(vector):
-                                average += x
-                            average = average / len(vector)
-                            var = average * 0.5
-                            for j, y in enumerate(vector):
-                                if y < average + (var/8) and y>average-(var):
-                                    total_average += y
-                                    contador += 1
-                            if contador>0:
-                                total_average = total_average / contador
-                            else: total_average=average
-                            var = total_average * 0.1
-                            #var = stats.stdev(vector, average)
-                            # vector_average.append(average)
-                            # vector_var.append(var)
-                            #if abs(BASELINE[i]) > total_average + float(var / 2) or abs(BASELINE[i]) < total_average - var:
-                            if abs(BASELINE[i]) < total_average - var:
-                                BASELINE[i] = total_average
+                    min = 999999999999999999.99
+                    total_average = 0
+                    contador = 0
+                    average = 0
+                    if i >= hWS and i < len(BASELINE) - hWS:
+                        vector = BASELINE[i-hWS:i+hWS+1]
+                    elif i in range(0,hWS):
+                        vector = BASELINE[0:wS]
+                    elif i in range(len(BASELINE) - hWS, len(BASELINE)):
+                        vector = BASELINE[len(BASELINE)-(wS+1):len(BASELINE)]
 
-                        if i in [len(BASELINE) - 1, len(BASELINE) - 2, len(BASELINE) - 3, len(BASELINE) - 4, len(BASELINE) - 5, len(BASELINE) - 6, len(BASELINE) - 7]:
-                            vector = []
-                            average = 0
-                            total_average=0
-                            contador=0
-                            for b in range(1, 8):
-                                vector.append(BASELINE[len(BASELINE) - b])
-                            for j, y in enumerate(vector):
-                                average += y
-                            average = average / len(vector)
-                            var = average * 0.5
-                            for j, y in enumerate(vector):
-                                if y < average + (var/8) and y>average-(var):
-                                    total_average += y
-                                    contador += 1
-                            if contador>0:
-                                total_average = total_average / contador
-                            else: total_average=average
-                            var = total_average * 0.1
-                            #var = stats.stdev(vector, average)
-                            # vector_average.append(average)
-                            # vector_var.append(var)
-                            #if abs(BASELINE[i]) > total_average + float(var / 2) or abs(BASELINE[i]) < total_average - var:
-                            if abs(BASELINE[i]) < total_average - var:
-                                BASELINE[i] = total_average
+                    no_out = reject_outliers(vector,1.7)
+                    #print(vector)
+                    #print(no_out)
+
+                    average = np.mean(no_out)
+
+                    #print("VALOR")
+                    #print(x)
+                    #print("VECTOR")
+                    #print(vector)
+                    var = average * 0.50
+
+                    for j, y in enumerate(vector):
+                        if y >= average-var:
+                            if y<min:
+                                min = y
+                    means.append(average)
+
+
+                #BASELINE = np.array(means)
+
+                print(len(means))
+                BASELINE = np.array(means)
 
             # plt.plot(BASELINE)
             # Replace 0 for median of BASELINE vector (without 0 values)
-            median = float(np.median(BASELINE[BASELINE > 0]))
-            BASELINE[BASELINE == 0] = median
+            # median = float(np.median(BASELINE[BASELINE > 0]))
+            # BASELINE[BASELINE == 0] = median
 
             # print(BASELINE)
             # print(len(BASELINE))
@@ -538,7 +501,7 @@ for ent in entries:
 
             #we want to replace values of baseline in promo days for average of KL_DETREND in days without promo
             average_KL_DETREND_nopromo=0
-            average_KL_DETREND=float(np.median(total.loc[:,"KL_DETREND"]))
+            average_KL_DETREND=BASELINE.mean()
             print("AV KL_DETREND")
             print(average_KL_DETREND)
 
@@ -556,22 +519,19 @@ for ent in entries:
             #plt.show()
             total["BASELINE"] = BASELINE
             for i,x in enumerate(total.values):
-                 total_aux=total[(total["DATE"]<=(x[2]+timedelta(days=40))) & (total["DATE"]>=(x[2]-timedelta(days=40))) ].reset_index(drop=True)
-            #     print(str(x[2]))
-            #     print("LEN total_aux")
-            #     print(len(total_aux))
-                 aux=0
-                 for j in range(0, len(total_aux)):
-                     if total_aux.loc[j,"STATUS_PROMO"] != "P" and total_aux.loc[j,"KL_DETREND"]!=0:
-                         average_KL_DETREND_nopromo += total_aux.loc[j, "BASELINE"]
-                         aux += 1
-                 if aux!=0: average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
-            #    if x[18]=="P": BASELINE[i]=average_KL_DETREND
-                 if x[18]=="P": BASELINE[i]=average_KL_DETREND_nopromo
-
-
-
-
+                total_aux=total[(total["DATE"]<=(x[2]+timedelta(days=40))) & (total["DATE"]>=(x[2]-timedelta(days=40))) ].reset_index(drop=True)
+            # #     print(str(x[2]))
+                #print("LEN total_aux")
+                #print(len(total_aux))
+                #print(total_aux)
+                aux=0
+                for j in range(0, len(total_aux)):
+                    if total_aux.loc[j,"STATUS_PROMO"] != "P" and total_aux.loc[j,"KL_DETREND"]!=0:
+                        average_KL_DETREND_nopromo += total_aux.loc[j, "BASELINE"]
+                        aux += 1
+                if aux!=0: average_KL_DETREND_nopromo=average_KL_DETREND_nopromo/aux
+            # #    if x[18]=="P": BASELINE[i]=average_KL_DETREND
+                if x[18]=="P": BASELINE[i]=average_KL_DETREND_nopromo
 
             #print("BASELINE CON KL_DETREND AVERAGE EN DÍAS CON PROMO")
             #print(BASELINE)
@@ -580,32 +540,48 @@ for ent in entries:
             #print(BASELINE)
             #print(len(BASELINE))
             #Savitzky
-            ventana=31
+            print("BASELINE")
+            print(type(BASELINE[0]))
+            print(BASELINE)
+            ventana=21
             if(len(BASELINE)>30):
                 if len(BASELINE)<ventana:
                     if len(BASELINE)%2!=1:
                         ventana=len(BASELINE)-1
                     else:
                         ventana=len(BASELINE)
-            BASELINE= savitzky_golay(BASELINE, ventana, 1)  # window size 51, polynomial order 3
+                BASELINE= savitzky_golay(BASELINE, ventana, 2)  # window size 51, polynomial order 3
 
-            #BASELINE = peakutils.baseline(BASELINE, deg=8)
+
+
+
+
+            #BASELINE = slicing(BASELINE)
+            #BASELINE = peakutils.baseline(BASELINE, deg=6, max_it=1000, tol=0.000001)
             #BASELINE = baseline_als(BASELINE)
-            #BASELINE=smooth(BASELINE, ventana, window="flat")
+            #BASELINE=smooth(BASELINE, ventana, window="blackman")
 
             # print("BASELINE DESPUÉS DE SAV")
             #print(BASELINE)
             #print(len(BASELINE))
-            treshold = float(0.25 * average_KL_DETREND)
+            treshold = float(0.5 * average_KL_DETREND)
             for i, x in enumerate(total["KL_DETREND"]):
                 if x<=treshold:
-                    #BASELINE[i]=x
-                    print()
+                    BASELINE[i]=x
 
             #print("TAM DE TOTAL")
             #print(len(total))
             #Add BASELINE column to our dataframe
-            total["BASELINE"]=BASELINE
+            # Check if total is ordered
+            print("CHECK TOTAL")
+            print(total)
+
+
+            for i,x in enumerate(total.values):
+                if x[2].isoweekday() == 6: BASELINE[i] = x[10]
+
+            total["BASELINE"] = BASELINE
+
             #in days with low values of KL_DETREND we have to replace BASELINE value (BASELINE=KL_DETREND)
             #total["BASELINE"]=total.apply(replace,axis=1)
             #Add incremental KL_DETREND column to our dataframe
@@ -652,12 +628,13 @@ data_canib=df_total.groupby(['Grupo canibalizacion', 'DATE'])
 print(len(data_canib))
 dict_promo={}
 #we create a dictionary which shows if each group of "Grupo canibalizacion_DATE" has promo("P") or not
+print(type(data_canib))
 for df in data_canib:
-    print(df)
-    print("df[0]")
-    print(df[0])
-    print("df[1]")
-    print(df[1])
+    #print(df)
+    #print("df[0]")
+    #print(df[0])
+    #print("df[1]")
+    #print(df[1])
     codigo_unico=[]
     if df[0]!=-1:
         if "P" in df[1].reset_index(drop=True).loc[:,"STATUS_PROMO"].values:
@@ -666,11 +643,11 @@ for df in data_canib:
             #print("CODIGO UNICO")
             #print(codigo_unico)
             dict_promo[str(df[1].reset_index(drop=True).loc[0,"Grupo canibalizacion"])+"_"+str(df[1].reset_index(drop=True).loc[0,"DATE"])]=codigo_unico[0]
-            print("RELLENANDO CON CÓDIGO ÚNICO DE PROMO")
+            #print("RELLENANDO CON CÓDIGO ÚNICO DE PROMO")
         else:
             dict_promo[str(df[1].reset_index(drop=True).loc[0, "Grupo canibalizacion"]) + "_" + str(
                 df[1].reset_index(drop=True).loc[0, "DATE"])] = 0
-            print("RELLENANDO CON 0")
+            #print("RELLENANDO CON 0")
 
 print("DICCIONARIO PROMOS")
 print(dict_promo)
@@ -684,7 +661,7 @@ for i, x in enumerate(matriz_aux):
     #row=df_total.iloc[i,:]
     key = str(x[23]) + "_" + str(x[2])
     #key=str(row["Grupo canibalizacion"])+"_"+str(row["DATE"])
-    if x[18]!="P":  matriz_aux[i,20]=0  # if no promo, venta_incremental=0
+    if x[18] not in ["P","C"]:  matriz_aux[i,20]=0  # if no promo, venta_incremental=0
     if key in dict_promo:
         if dict_promo[key]!=0:
             #df_total[i,"STATUS_PROMO"]="C"
@@ -751,7 +728,10 @@ df_total2=pd.DataFrame(matriz_aux, columns=["CANT", "CDATA", "DATE", "ENS", "FAM
                                             "KL_DETREND","EUROS_DETREND","Animacion 1", "Animacion 2", "Animacion 3",
                                             "TEMATICA", "Abreviatura accion","Codigo unico","STATUS_PROMO", "BASELINE", "VENTA_INCREMENTAL",
                                             "VENTA_PROMO", "EUROS_PROMO", "Grupo canibalizacion"])
-df_total2.to_csv("data_famapo_122.csv", sep=';', decimal=',', float_format='%.6f')
+df_total2["MEANS"] = means
+
+#print(df_total2["MEANS"])
+df_total2.to_csv("data_eroski.csv", sep=';', decimal='.', float_format='%.6f')
 print("Finished writing file")
 
 
