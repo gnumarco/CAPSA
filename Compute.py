@@ -4,7 +4,7 @@ import datetime
 import numpy as np
 from math import factorial
 import statistics as stats
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from datetime import timedelta
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
@@ -16,10 +16,10 @@ import csv
 closed_list = [446, 5002, 5004, 5005, 5011, 5012, 5013, 5015, 5018, 5042, 5058, 5073, 5081, 5094, 5123, 5126, 5162,
                5302, 5317, 5324, 5326, 5327, 5474, 5728, 5740, 5741, 5755, 5788, 7425, 7449, 7450]
 
-#mode = 1  # Eroski
-mode = 2 #ECI
+mode = 1  # Eroski
+#mode = 2 #ECI
 # mode = 3
-user = "M"
+user = "D"
 
 # mode_baseline 2 is means by week days
 mode_baseline = 2
@@ -293,7 +293,7 @@ elif user == "S":
 
 station = pd.read_excel(station_file, 1)
 for ent in entries:
-    # if ent[3] in ["340", "341","360", "366","470","471"] and ent[1] == "Z5E99K":
+    if ent[3] in ["122", "121","102"]:
     # if ent[1]=="Z5E99K":
     #if ent[3]=="122" and ent[1]=="Z5E99K" and ent[0]=="000000000000011467" and ent[2]=="0000121062":
     # if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062":
@@ -705,10 +705,10 @@ df_total = df_total.join(canib_excel.set_index('Cod. Familia'), on='FAMAPO')
 df_total.replace({'Grupo canibalizacion': {None: -1}}, inplace=True)
 
 # group by Grupo canibalizacion and DATE
-data_canib = df_total.groupby(['Grupo canibalizacion', 'DATE'])
+data_canib = df_total.groupby(['Grupo canibalizacion', 'DATE', 'CDATA','ENS'])
 print(len(data_canib))
 dict_promo = {}
-# we create a dictionary which shows if each group of "Grupo canibalizacion_DATE" has promo("P") or not
+# we create a dictionary which shows if each group of "Grupo canibalizacion_DATE_CDATA_ENS" has promo("P") or not
 print(type(data_canib))
 for df in data_canib:
     # print(df)
@@ -724,11 +724,13 @@ for df in data_canib:
             # print("CODIGO UNICO")
             # print(codigo_unico)
             dict_promo[str(df[1].reset_index(drop=True).loc[0, "Grupo canibalizacion"]) + "_" + str(
-                df[1].reset_index(drop=True).loc[0, "DATE"])] = codigo_unico[0]
+                df[1].reset_index(drop=True).loc[0, "DATE"])+"_"+ str(df[1].reset_index(drop=True).loc[0,"CDATA"])+"_"+
+                       str(df[1].reset_index(drop=True).loc[0,"ENS"])]= codigo_unico[0]
             # print("RELLENANDO CON CÓDIGO ÚNICO DE PROMO")
         else:
             dict_promo[str(df[1].reset_index(drop=True).loc[0, "Grupo canibalizacion"]) + "_" + str(
-                df[1].reset_index(drop=True).loc[0, "DATE"])] = 0
+                df[1].reset_index(drop=True).loc[0, "DATE"]) + "_" + str(df[1].reset_index(drop=True).loc[0, "CDATA"]) + "_"
+                       + str(df[1].reset_index(drop=True).loc[0, "ENS"])] = 0
             # print("RELLENANDO CON 0")
 
 print("DICCIONARIO PROMOS")
@@ -741,9 +743,9 @@ vector = []
 matriz_aux = df_total.values
 for i, x in enumerate(matriz_aux):
     # row=df_total.iloc[i,:]
-    key = str(x[23]) + "_" + str(x[2])
+    key = str(x[23]) + "_" + str(x[2])+ "_" + str(x[1]) + "_" + str(x[3])
     # key=str(row["Grupo canibalizacion"])+"_"+str(row["DATE"])
-    if x[18] not in ["P", "C"]:  matriz_aux[i, 20] = 0  # if no promo, venta_incremental=0
+
     if key in dict_promo:
         if dict_promo[key] != 0:
             # df_total[i,"STATUS_PROMO"]="C"
@@ -755,7 +757,11 @@ for i, x in enumerate(matriz_aux):
                 print(i)
                 print("CAMBIANDO EL VALOR A C")
 
-        # aux_df=df_total[(df_total["Grupo canibalizacion"]==row["Grupo canibalizacion"]) & (df_total["DATE"]==row["DATE"])]
+for i, x in enumerate(matriz_aux):
+    # if no promo, venta_incremental=0
+    if x[18] not in ["P", "C"]:  matriz_aux[i, 20] = 0
+
+    # aux_df=df_total[(df_total["Grupo canibalizacion"]==row["Grupo canibalizacion"]) & (df_total["DATE"]==row["DATE"])]
         # print("DATAFRAME AUX")
         # print(aux_df)
         # print("COLUMNA STATUS PROMO")
@@ -815,5 +821,5 @@ df_total2 = pd.DataFrame(matriz_aux,
 # df_total2["MEANS"] = BASELINE2
 
 # print(df_total2["MEANS"])
-df_total2.to_csv("data_ECI.csv", sep=';', decimal='.', float_format='%.6f')
+df_total2.to_csv("data_Eroski.csv", sep=';', decimal='.', float_format='%.6f')
 print("Finished writing file")
