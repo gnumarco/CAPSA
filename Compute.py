@@ -16,10 +16,10 @@ import csv
 closed_list = [446, 5002, 5004, 5005, 5011, 5012, 5013, 5015, 5018, 5042, 5058, 5073, 5081, 5094, 5123, 5126, 5162,
                5302, 5317, 5324, 5326, 5327, 5474, 5728, 5740, 5741, 5755, 5788, 7425, 7449, 7450]
 
-mode = 1  # Eroski
-#mode = 2 #ECI
+#mode = 1  # Eroski
+mode = 2 #ECI
 # mode = 3
-user = "D"
+user = "S"
 
 # mode_baseline 2 is means by week days
 mode_baseline = 2
@@ -222,6 +222,8 @@ elif user == "M" and mode == 3:
     promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 elif user == "S" and mode == 1:
     promo_file = "C:\\Datos analisis\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712.xlsx"
+elif user == "S" and mode == 2:
+    promo_file = "C:\\Datos analisis\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 
 promo = pd.read_excel(promo_file)
 # print(promo)
@@ -293,7 +295,7 @@ elif user == "S":
 
 station = pd.read_excel(station_file, 1)
 for ent in entries:
-    if ent[3] in ["122", "121","102"]:
+    #if ent[3] in ["122", "121","102"]:
     # if ent[1]=="Z5E99K":
     #if ent[3]=="122" and ent[1]=="Z5E99K" and ent[0]=="000000000000011467" and ent[2]=="0000121062":
     # if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062":
@@ -821,5 +823,5 @@ df_total2 = pd.DataFrame(matriz_aux,
 # df_total2["MEANS"] = BASELINE2
 
 # print(df_total2["MEANS"])
-df_total2.to_csv("data_Eroski.csv", sep=';', decimal='.', float_format='%.6f')
+df_total2.to_csv("data_ECI.csv", sep=';', decimal='.', float_format='%.6f')
 print("Finished writing file")
