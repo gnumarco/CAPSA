@@ -16,8 +16,8 @@ import csv
 closed_list = [446, 5002, 5004, 5005, 5011, 5012, 5013, 5015, 5018, 5042, 5058, 5073, 5081, 5094, 5123, 5126, 5162,
                5302, 5317, 5324, 5326, 5327, 5474, 5728, 5740, 5741, 5755, 5788, 7425, 7449, 7450]
 
-#mode = 1  # Eroski
-mode = 2 #ECI
+mode = 1  # Eroski
+#mode = 2 #ECI
 # mode = 3
 user = "M"
 
@@ -209,9 +209,9 @@ df_total = None
 
 # We read promotion file and make a new dataframe to use the function "join" in order to calculate promos
 if user == "D" and mode == 1:
-    promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712_VersII.xlsx"
+    promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712_VesIII.xlsx"
 elif user == "M" and mode == 1:
-    promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712_VersII.xlsx"
+    promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712_VesIII.xlsx"
 elif user == "D" and mode == 2:
     promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 elif user == "M" and mode == 2:
@@ -221,7 +221,7 @@ elif user == "D" and mode == 3:
 elif user == "M" and mode == 3:
     promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 elif user == "S" and mode == 1:
-    promo_file = "C:\\Datos analisis\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712_VersII.xlsx"
+    promo_file = "C:\\Datos analisis\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712_VesIII.xlsx"
 elif user == "S" and mode == 2:
     promo_file = "C:\\Datos analisis\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 
@@ -823,8 +823,8 @@ df_total2 = pd.DataFrame(matriz_aux,
 df_total2["TREND"] = df_total2["TREND"].astype(float)
 df_total2["KL_DETREND"] = df_total2["KL_DETREND"].astype(float)
 df_total2["EUROS_DETREND"] = df_total2["EUROS_DETREND"].astype(float)
-df_total2["BASELINE"] = df_total2["BAS ELINE"].astype(float)
-df_total2["VENTA_INCREMENTAL"] = df_total2["VENTA_INCREM ENTAL"].astype(float)
+df_total2["BASELINE"] = df_total2["BASELINE"].astype(float)
+df_total2["VENTA_INCREMENTAL"] = df_total2["VENTA_INCREMENTAL"].astype(float)
 df_total2["VENTA_PROMO"] = df_total2["VENTA_PROMO"].astype(float)
 df_total2["EUROS_PROMO"] = df_total2["EUROS_PROMO"].astype(float)
 df_total2["CANT"] = df_total2["CANT"].astype(float)
@@ -833,5 +833,5 @@ df_total2["KL"] = df_total2["KL"].astype(float)
 # df_total2["MEANS"] = BASELINE2
 
 # print(df_total2["MEANS"])
-df_total2.to_csv("data_ECI_2018_02_14.csv", sep=';', decimal=',', float_format='%.6f')
+df_total2.to_csv("data_Eroski_2018_02_14.csv", sep=';', decimal=',', float_format='%.6f')
 print("Finished writing file")
