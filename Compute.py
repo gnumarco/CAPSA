@@ -294,7 +294,7 @@ elif user == "S":
 station = pd.read_excel(station_file, 1)
 for ent in entries:
     if ent[3] in ["122", "121","102"]:
-    # if ent[1]=="Z5E99K":
+    #if ent[1]=="Z5E99K":
     #if ent[3]=="122" and ent[1]=="Z5E99K" and ent[0]=="000000000000011467" and ent[2]=="0000121062":
     # if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062":
         print("VALOR DE SFAPO: ")
