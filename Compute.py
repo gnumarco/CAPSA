@@ -16,9 +16,9 @@ import csv
 closed_list = [446, 5002, 5004, 5005, 5011, 5012, 5013, 5015, 5018, 5042, 5058, 5073, 5081, 5094, 5123, 5126, 5162,
                5302, 5317, 5324, 5326, 5327, 5474, 5728, 5740, 5741, 5755, 5788, 7425, 7449, 7450]
 
-mode = 1  # Eroski
+mode = 2  # Eroski
 #mode = 2 #ECI
-# mode = 3
+#mode = 3 # CRF
 user = "M"
 
 # mode_baseline 2 is means by week days
@@ -182,13 +182,17 @@ entries = []
 
 # Gets all the combinations "Material"+"Enseña"+"Central Data"+"Familia APO"
 
+# Mode 1 Eroski
 if mode == 1:
     cursor.execute(
         'SELECT DISTINCT "_BIC_ZMATERIAL","_BIC_ZENSENA2","_BIC_ZCDATA","_BIC_ZFAMAPO"  FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPTF1"')
+
+# Mode 2 ECI
 elif mode == 2:
     cursor.execute(
         'SELECT DISTINCT "_BIC_ZMATERIAL","_BIC_ZENSENA","_BIC_ZCDATA","_BIC_ZFAMAPO"  FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSLSRPT01"')
 
+# Mode 3 CRF
 elif mode == 3:
     cursor.execute(
         'SELECT DISTINCT "_BIC_ZMATERIA2","_BIC_ZENSENA","_BIC_ZCDATA","_BIC_ZFAMAPO"  FROM "_SYS_BIC"."CAPSA_BW_01.ZEP1/ZSD_DE03"')
@@ -209,21 +213,24 @@ df_total = None
 
 # We read promotion file and make a new dataframe to use the function "join" in order to calculate promos
 if user == "D" and mode == 1:
-    promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712_VesIII.xlsx"
+    promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1802(1QUINCENA).xlsx"
 elif user == "M" and mode == 1:
-    promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712_VesIII.xlsx"
+    promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1802(1QUINCENA).xlsx"
 elif user == "D" and mode == 2:
     promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 elif user == "M" and mode == 2:
     promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 elif user == "D" and mode == 3:
-    promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
+    promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_CRF_LYB_DDLL_2015_1709.XLSX"
 elif user == "M" and mode == 3:
-    promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
+    promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_CRF_LYB_DDLL_2015_1709.XLSX"
 elif user == "S" and mode == 1:
-    promo_file = "C:\\Datos analisis\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712_VesIII.xlsx"
+    promo_file = "C:\\Datos analisis\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1802(1QUINCENA).xlsx"
 elif user == "S" and mode == 2:
     promo_file = "C:\\Datos analisis\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
+elif user == "S" and mode == 3:
+    promo_file = "C:\\Datos analisis\\PROMOCIONES_CRF_LYB_DDLL_2015_1709.XLSX"
+
 
 promo = pd.read_excel(promo_file)
 # print(promo)
@@ -249,6 +256,7 @@ for row_promo in promo.values:
     last_date = row_promo[4] + timedelta(days=days_after)
     first_date = row_promo[3] - timedelta(days=days_before)
     diff = last_date - (first_date - timedelta(days=days_before))
+    print(row_promo[1])
     data_matrix.append([row_promo[2], row_promo[7], first_date,
                         row_promo[9], row_promo[10], row_promo[11],
                         row_promo[14], row_promo[8], int(row_promo[1]), row_promo[0]])
@@ -833,5 +841,5 @@ df_total2["KL"] = df_total2["KL"].astype(float)
 # df_total2["MEANS"] = BASELINE2
 
 # print(df_total2["MEANS"])
-df_total2.to_csv("data_Eroski_2018_02_14.csv", sep=';', decimal=',', float_format='%.6f')
+df_total2.to_csv("data_Eroski_2018_02_23.csv", sep=';', decimal=',', float_format='%.6f')
 print("Finished writing file")
