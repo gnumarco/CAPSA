@@ -19,7 +19,7 @@ closed_list = [446, 5002, 5004, 5005, 5011, 5012, 5013, 5015, 5018, 5042, 5058, 
 mode = 1  # Eroski
 #mode = 2 #ECI
 # mode = 3
-user = "D"
+user = "M"
 
 # mode_baseline 2 is means by week days
 mode_baseline = 2
@@ -209,9 +209,9 @@ df_total = None
 
 # We read promotion file and make a new dataframe to use the function "join" in order to calculate promos
 if user == "D" and mode == 1:
-    promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712.xlsx"
+    promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712_VesIII.xlsx"
 elif user == "M" and mode == 1:
-    promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712.xlsx"
+    promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712_VesIII.xlsx"
 elif user == "D" and mode == 2:
     promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 elif user == "M" and mode == 2:
@@ -221,7 +221,9 @@ elif user == "D" and mode == 3:
 elif user == "M" and mode == 3:
     promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 elif user == "S" and mode == 1:
-    promo_file = "C:\\Datos analisis\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712.xlsx"
+    promo_file = "C:\\Datos analisis\\PROMOCIONES_EROSKI_LYB_DDLL_2015_1712_VesIII.xlsx"
+elif user == "S" and mode == 2:
+    promo_file = "C:\\Datos analisis\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
 
 promo = pd.read_excel(promo_file)
 # print(promo)
@@ -293,8 +295,8 @@ elif user == "S":
 
 station = pd.read_excel(station_file, 1)
 for ent in entries:
-    if ent[3] in ["122", "121","102"]:
-    #if ent[1]=="Z5E99K":
+    #if ent[3] in ["122"]:
+    # if ent[1]=="Z5E99K":
     #if ent[3]=="122" and ent[1]=="Z5E99K" and ent[0]=="000000000000011467" and ent[2]=="0000121062":
     # if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062":
         print("VALOR DE SFAPO: ")
@@ -693,11 +695,11 @@ for ent in entries:
 
 # We read canib file
 if user == "D":
-    canib_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Canib.xlsx"
+    canib_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\GRUPOS CANIBALIZACIÓN FEB_18.xlsx"
 elif user == "M":
-    canib_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\Canib.xlsx"
+    canib_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\GRUPOS CANIBALIZACIÓN FEB_18.xlsx"
 elif user == "S":
-    canib_file = "C:\\Datos analisis\\Canib.xlsx"
+    canib_file = "C:\\Datos analisis\\GRUPOS CANIBALIZACIÓN FEB_18.xlsx"
 
 canib_excel = pd.read_excel(canib_file)
 df_total = df_total.join(canib_excel.set_index('Cod. Familia'), on='FAMAPO')
@@ -818,8 +820,18 @@ df_total2 = pd.DataFrame(matriz_aux,
                                   "TEMATICA", "Abreviatura accion", "Codigo unico", "STATUS_PROMO", "BASELINE",
                                   "VENTA_INCREMENTAL",
                                   "VENTA_PROMO", "EUROS_PROMO", "Grupo canibalizacion"])
+df_total2["TREND"] = df_total2["TREND"].astype(float)
+df_total2["KL_DETREND"] = df_total2["KL_DETREND"].astype(float)
+df_total2["EUROS_DETREND"] = df_total2["EUROS_DETREND"].astype(float)
+df_total2["BASELINE"] = df_total2["BASELINE"].astype(float)
+df_total2["VENTA_INCREMENTAL"] = df_total2["VENTA_INCREMENTAL"].astype(float)
+df_total2["VENTA_PROMO"] = df_total2["VENTA_PROMO"].astype(float)
+df_total2["EUROS_PROMO"] = df_total2["EUROS_PROMO"].astype(float)
+df_total2["CANT"] = df_total2["CANT"].astype(float)
+df_total2["IMP"] = df_total2["IMP"].astype(float)
+df_total2["KL"] = df_total2["KL"].astype(float)
 # df_total2["MEANS"] = BASELINE2
 
 # print(df_total2["MEANS"])
-df_total2.to_csv("data_Eroski.csv", sep=';', decimal='.', float_format='%.6f')
+df_total2.to_csv("data_Eroski_2018_02_14.csv", sep=';', decimal=',', float_format='%.6f')
 print("Finished writing file")
