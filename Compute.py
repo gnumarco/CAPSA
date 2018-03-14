@@ -21,9 +21,9 @@ import csv
 closed_list = [446, 5002, 5004, 5005, 5011, 5012, 5013, 5015, 5018, 5042, 5058, 5073, 5081, 5094, 5123, 5126, 5162,
                5302, 5317, 5324, 5326, 5327, 5474, 5728, 5740, 5741, 5755, 5788, 7425, 7449, 7450]
 
-# mode = 1  # Eroski
+mode = 1  # Eroski
 # mode = 2 #ECI
-mode = 3  # CRF
+#mode = 3  # CRF
 # mode = 4 # MYM
 user = "D"
 
@@ -116,7 +116,7 @@ def eurospromo(row):
 
 def ispromo(row):
     if row["Animacion 1"] == 0:
-        return 0
+        return "0"
     else:
         return "P"
 
@@ -231,30 +231,30 @@ def read_promo_file():
 
 
     # We read promotion file and make a new dataframe to use the function "join" in order to calculate promos
-    if user == "D" and mode == 1:
-        promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2016_1802_VersII.xlsx"
-    elif user == "M" and mode == 1:
-        promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2016_1802_VersII.xlsx"
-    elif user == "S" and mode == 1:
-        promo_file = "C:\\Datos analisis\\PROMOCIONES_EROSKI_LYB_DDLL_2016_1802_VersII.xlsx"
-    elif user == "D" and mode == 2:
-        promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
-    elif user == "M" and mode == 2:
-        promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
-    elif user == "S" and mode == 2:
-        promo_file = "C:\\Datos analisis\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
-    elif user == "D" and mode == 3:
-        promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Softwares\\PROMOCIONES_CRF_LYB_DDLL_2015_1709.XLSX"
-    elif user == "M" and mode == 3:
-        promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_CRF_LYB_DDLL_2015_1709.XLSX"
-    elif user == "S" and mode == 3:
-        promo_file = "C:\\Datos analisis\\PROMOCIONES_CRF_LYB_DDLL_2015_1709.XLSX"
-    elif user == "D" and mode == 4:
-        promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Softwares\\PROMOCIONES_HLR.XLSX"
-    elif user == "M" and mode == 4:
-        promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_HLR.xlsx"
-    elif user == "S" and mode == 4:
-        promo_file = "C:\\Datos analisis\\PROMOCIONES_HLR.XLSX"
+    # if user == "D" and mode == 1:
+    #     promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2016_1802_VersII.xlsx"
+    # elif user == "M" and mode == 1:
+    #     promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2016_1802_VersII.xlsx"
+    # elif user == "S" and mode == 1:
+    #     promo_file = "C:\\Datos analisis\\PROMOCIONES_EROSKI_LYB_DDLL_2016_1802_VersII.xlsx"
+    # elif user == "D" and mode == 2:
+    #     promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
+    # elif user == "M" and mode == 2:
+    #     promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
+    # elif user == "S" and mode == 2:
+    #     promo_file = "C:\\Datos analisis\\PROMOCIONES_ECI_2015_1710_VersIII.XLSX"
+    # elif user == "D" and mode == 3:
+    #     promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Softwares\\PROMOCIONES_CRF_LYB_DDLL_2015_1709.XLSX"
+    # elif user == "M" and mode == 3:
+    #     promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_CRF_LYB_DDLL_2015_1709.XLSX"
+    # elif user == "S" and mode == 3:
+    #     promo_file = "C:\\Datos analisis\\PROMOCIONES_CRF_LYB_DDLL_2015_1709.XLSX"
+    # elif user == "D" and mode == 4:
+    #     promo_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Softwares\\PROMOCIONES_HLR.XLSX"
+    # elif user == "M" and mode == 4:
+    #     promo_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\PROMOCIONES_HLR.xlsx"
+    # elif user == "S" and mode == 4:
+    #     promo_file = "C:\\Datos analisis\\PROMOCIONES_HLR.XLSX"
 
     # connection
     uri = "mongodb://Dayana:capsa@172.31.30.94:27017/?authSource=admin"
@@ -262,17 +262,29 @@ def read_promo_file():
 
     db = client.get_database("DATASCIENCE")
 
-    if mode==1:
-        result=db.Promos.find({})
-    promo = pd.read_excel(promo_file)
+    result=db.Promos.find({"Mode": mode},{"_id":0.0, "Mode":0.0})
+    MyDoc=[]
+
+    for doc in result:
+        print(doc)
+        MyDoc.append(doc)
+
+    #print(MyDoc[7]["FAMAPO Code"])
+    promo=pd.DataFrame(data=MyDoc, columns=["Promo Code", "Client Code", "ENS Code", "Initial Date", "Final Date",
+                                            "Brand Code", "Family Code", "FAMAPO Code", "Action Abbreviature",
+                                            "Animation 1", "Animation 2", "Animation 3","Base PVP", "Grouped PVP",
+                                            "Thematic", "Location", "Highlighted","Marketing"])
+    #print(promo)
+    #promo = pd.read_excel(promo_file)
     # print(promo)
     # print(len(promo))
     # print(promo.duplicated())
     promo = promo.drop_duplicates(
-        subset=["COD ENSEÑA", "CODIGO CLIENTE", "Fecha inicio folleto", "Fecha fin folleto", " CODFamilia apo"])
+        subset=["ENS Code", "Client Code", "Initial Date", "Final Date", "FAMAPO Code"])
     promo = promo.reset_index(drop=True)
+    #print(promo)
     # print(len(promo))
-    # print(promo)
+    #print(promo)
 
     df_promo = pd.DataFrame(
         columns=["ENS", "FAMAPO", "DATE", "Animacion 1", "Animacion 2", "Animacion 3", "TEMATICA", "Abreviatura accion",
@@ -285,7 +297,7 @@ def read_promo_file():
     for row_promo in promo.values:
         # print(row_promo["Animacion 1"])
         # print(row_promo[0])
-        print(row_promo[4])
+        #print(row_promo[4])
         last_date = row_promo[4] + timedelta(days=days_after)
         first_date = row_promo[3] - timedelta(days=days_before)
         diff = last_date - (first_date - timedelta(days=days_before))
@@ -324,6 +336,7 @@ def read_promo_file():
     df_promo = df_promo.drop_duplicates(subset=["ENS", "CDATA", "DATE", "FAMAPO"])
     df_promo = df_promo.reset_index(drop=True)
 
+    #print(df_promo)
     return (df_promo)
 
 
@@ -382,11 +395,11 @@ def compute_df_total(station, cursor, entries, df_promo, bar):
     cpt = 0
     df_total = None
     for ent in entries:
-        if ent[0] in dict_CRFtoMatCapsa.keys():
+        #if ent[0] in dict_CRFtoMatCapsa.keys():
         #if ent[0] not in ["007000000023142299", "007000000048107699","007000000088048499", "007000000090986899", "007000000040636399","007000000045326999", "007000000051248499","007000000076717499"]:
         #if ent[0] in [ "007000000006071099", "007000000018173699", "007000000018173799", "007000000018173999","007000000087293099", "007000000087293299", "007000000087293799", "007000000023133699", "007000000023135499"]:
         #if ent[0] in ["007000000006071099","7000000079089599"]:
-        # if ent[1]=="Z5E99K":
+        if ent[1]=="Z5E99K" and ent[3]=="122":
         # if ent[3]=="122" and ent[1]=="Z5E99K" and ent[0]=="000000000000011467" and ent[2]=="0000121062":
         # if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062":
         # print("VALOR DE SFAPO: ")
@@ -902,7 +915,7 @@ def add_canib_data(df_total):
                 dict_promo[str(df[1].reset_index(drop=True).loc[0, "Grupo canibalizacion"]) + "_" + str(
                     df[1].reset_index(drop=True).loc[0, "DATE"]) + "_" + str(
                     df[1].reset_index(drop=True).loc[0, "CDATA"]) + "_"
-                           + str(df[1].reset_index(drop=True).loc[0, "ENS"])] = 0
+                           + str(df[1].reset_index(drop=True).loc[0, "ENS"])] = "0"
                 # print("RELLENANDO CON 0")
 
     # print("DICCIONARIO PROMOS")
@@ -919,7 +932,7 @@ def add_canib_data(df_total):
         # key=str(row["Grupo canibalizacion"])+"_"+str(row["DATE"])
 
         if key in dict_promo:
-            if dict_promo[key] != 0:
+            if dict_promo[key] != "0":
                 # df_total[i,"STATUS_PROMO"]="C"
                 # vector.append("C")
                 if x[18] != "P":
@@ -944,6 +957,15 @@ def add_canib_data(df_total):
 
 # we write data in a csv file
 def write_to_file(df_total2):
+
+    # connection
+    uri = "mongodb://Dayana:capsa@172.31.30.94:27017/?authSource=admin"
+    client = MongoClient(uri)
+
+    db = client.get_database("DATASCIENCE")
+
+    MyDoc=[]
+
     print("Writing final CSV file")
 
     df_total2["TREND"] = df_total2["TREND"].astype(float)
@@ -956,17 +978,36 @@ def write_to_file(df_total2):
     df_total2["CANT"] = df_total2["CANT"].astype(float)
     df_total2["IMP"] = df_total2["IMP"].astype(float)
     df_total2["KL"] = df_total2["KL"].astype(float)
+    df_total2["MAT"]=df_total2["MAT"].astype(int)
+
+
+    df_total2.replace({'Animacion 1': {0: ""}}, inplace=True)
+    df_total2.replace({'Animacion 2': {0: ""}}, inplace=True)
+    df_total2.replace({'Animacion 3': {0: ""}}, inplace=True)
+    df_total2.replace({'TEMATICA': {0: ""}}, inplace=True)
+    df_total2.replace({'Abreviatura accion': {0: ""}}, inplace=True)
+    df_total2["Codigo unico"]=df_total2["Codigo unico"].replace(0, "0")
+    df_total2.replace({'STATUS_PROMO': {0, "0"}}, inplace=True)
+
+
     # df_total2["MEANS"] = BASELINE2
 
     # print(df_total2["MEANS"])
     if mode == 1:
         out_file = "data_Eroski_"
+        df_total2["Mode"]=1
+        MyDoc=df_total2.to_dict(orient="records")
+        write_result=db.Sales.insert_many(MyDoc)
+
     elif mode == 2:
         out_file = "data_ECI_"
+        df_total2["Mode"] = 2
     elif mode == 3:
         out_file = "data_CRF_"
+        df_total2["Mode"] = 3
     elif mode == 4:
         out_file = "data_MyM_"
+        df_total2["Mode"] = 4
     out_file = out_file + time.strftime("%d-%m-%Y") + ".csv"
     df_total2.to_csv(out_file, sep=';', decimal=',', float_format='%.6f')
     print("Finished writing file")

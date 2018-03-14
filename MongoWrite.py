@@ -17,6 +17,7 @@ if mode==1:
     doc=openpyxl.load_workbook('C:\\Users\\tr5568\\Desktop\\DAYANA\\CAPSA\\Softwares\\PROMOCIONES_EROSKI_LYB_DDLL_2016_1802_VersII.xlsx')
     hoja=doc.get_sheet_by_name("Promociones")
 
+
 if mode==2:
     doc=openpyxl.load_workbook('C:\\Users\\tr5568\\Desktop\\DAYANA\\CAPSA\\Softwares\\PROMOCIONES_ECI_2015_1710_VersIII.xlsx')
     hoja=doc.get_sheet_by_name("Formato")
@@ -33,10 +34,13 @@ if mode == 4:
 
 
 i=0
+
+result=db.Promos.delete_many({"Mode":mode})
 for row in hoja.rows:
 
+
     if(i>0):
-        MyDoc.append({"Unique Promo Code": row[0].value, "Client Code": row[1].value, "Enseña Code":row[2].value, "Initial Date": row[3].value, "Final Date": row[4].value, "Brand Code": row[5].value, "Family Code": row[6].value, "FAMAPO Code": row[7].value, "Action Abbreviation": row[8].value,
+        MyDoc.append({"Promo Code": row[0].value, "Client Code": row[1].value, "ENS Code":row[2].value, "Initial Date": row[3].value, "Final Date": row[4].value, "Brand Code": row[5].value, "Family Code": row[6].value, "FAMAPO Code": row[7].value, "Action Abbreviature": row[8].value,
                       "Animation 1": row[9].value, "Animation 2": row[10].value, "Animation 3": row[11].value, "Base PVP": row[12].value, "Grouped PVP": row[13].value, "Thematic": row[14].value, "Location": row[15].value, "Highlighted": row[16].value, "Marketing": row[17].value, "Mode":mode})
 
     i+=1
