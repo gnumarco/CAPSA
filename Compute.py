@@ -399,7 +399,7 @@ def compute_df_total(station, cursor, entries, df_promo, bar):
         #if ent[0] not in ["007000000023142299", "007000000048107699","007000000088048499", "007000000090986899", "007000000040636399","007000000045326999", "007000000051248499","007000000076717499"]:
         #if ent[0] in [ "007000000006071099", "007000000018173699", "007000000018173799", "007000000018173999","007000000087293099", "007000000087293299", "007000000087293799", "007000000023133699", "007000000023135499"]:
         #if ent[0] in ["007000000006071099","7000000079089599"]:
-        if ent[1]=="Z5E99K" and ent[3]=="122":
+        if ent[1]=="Z5E99K" and ent[3] in ["102", "103", "111","113","118","119","122"]:
         # if ent[3]=="122" and ent[1]=="Z5E99K" and ent[0]=="000000000000011467" and ent[2]=="0000121062":
         # if ent[3] =="550" and ent[1] == "Z5E99K" and ent[0]=="000000000000014129" and ent[2]=="0000121062":
         # print("VALOR DE SFAPO: ")
@@ -876,7 +876,7 @@ def compute_df_total(station, cursor, entries, df_promo, bar):
 def add_canib_data(df_total):
     # We read canib file
     if user == "D":
-        canib_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\GRUPOS CANIBALIZACIÓN FEB_18.xlsx"
+        canib_file = "C:\\Users\\tr5568\\Desktop\\Dayana\\CAPSA\\Softwares\\GRUPOS CANIBALIZACIÓN FEB_18.xlsx"
     elif user == "M":
         canib_file = "C:\\Users\\gnuma\\Google Drive\\CAPSA\\Softwares\\GRUPOS CANIBALIZACIÓN FEB_18.xlsx"
     elif user == "S":
